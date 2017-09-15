@@ -22,5 +22,10 @@ $(RIOTTOOLS)/mosquitto_rsmb/mosquitto_rsmb:
 	@make -C $(RIOTTOOLS)/mosquitto_rsmb
 	@echo "[INFO] rsmb binary successfully build!"
 
+$(RIOTBASE)/dist/tools/inga_tool/inga_tool:
+	@echo "[INFO] inga_tool binary not found - building it from source"
+	@make -C $(RIOTBASE)/dist/tools/inga_tool
+	@echo "[INFO] inga_tool binary successfully build!"
+
 mosquitto_rsmb: $(RIOTTOOLS)/mosquitto_rsmb/mosquitto_rsmb
 	@make -C $(RIOTTOOLS)/mosquitto_rsmb run
