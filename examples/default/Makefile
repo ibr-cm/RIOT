@@ -7,8 +7,7 @@ BOARD ?= native
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
 
-BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo arduino-nano \
-                             arduino-uno
+BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-uno
 
 # Uncomment these lines if you want to use platform support from external
 # repositories:
@@ -41,7 +40,8 @@ BOARD_PROVIDES_NETIF := acd52832 airfy-beacon b-l072z-lrwan1 cc2538dk fox \
         iotlab-m3 iotlab-a8-m3 lobaro-lorabox lsn50 mulle microbit native nrf51dk \
         nrf51dongle nrf52dk nrf52840dk nrf52840-mdk nrf6310 nucleo-f767zi \
         openmote-cc2538 pba-d-01-kw2x remote-pa remote-reva samr21-xpro \
-        spark-core telosb yunjia-nrf51822 z1
+        spark-core telosb yunjia-nrf51822 z1 \
+        inga_red inga_white inga_blue inga_green
 
 ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # Use modules for networking
