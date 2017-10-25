@@ -32,6 +32,10 @@
 #include "debug.h"
 #define ENABLE_DEBUG      (0)
 
+#ifdef MODULE_PM_LAYERED
+#include "pm_layered.h"
+#endif
+
 #define MT_START            0x08
 #define MT_START_REPEATED   0x10
 #define MT_ADDRESS_ACK      0x18
@@ -270,6 +274,9 @@ void i2c_poweron(i2c_t dev)
 {
     assert(dev < I2C_NUMOF);
     (void) dev;
+#ifdef MODULE_PM_LAYERED
+  pm_block(PM_INVALID_TWI);
+#endif
     power_twi_enable();
 }
 
@@ -278,6 +285,9 @@ void i2c_poweroff(i2c_t dev)
     assert(dev < I2C_NUMOF);
     (void) dev;
     power_twi_disable();
+#ifdef MODULE_PM_LAYERED
+  pm_unblock(PM_INVALID_TWI);
+#endif
 }
 
 static int _start(uint8_t address, uint8_t rw_flag)
