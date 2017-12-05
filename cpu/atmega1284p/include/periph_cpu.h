@@ -25,6 +25,30 @@ extern "C" {
 
 #include "periph_cpu_common.h"
 
+#define PM_NUM_MODES (4)
+#define PM_BLOCKER_INITIAL { .val_u32 = 0x00000000 }
+
+/* The atmega1284p offers 6 pm modes, however, only 5 are to be implemented, as idle is not really a blockable PM mode! */
+enum pm_sleep_modes {
+    PM_SLEEPMODE_PWR_DOWN    = 0,
+    PM_SLEEPMODE_STANDBY,
+    PM_SLEEPMODE_PWR_SAVE,
+    /*PM_SLEEPMODE_EXT_STANDBY,*/
+    PM_SLEEPMODE_ADC,
+    PM_SLEEPMODE_IDLE
+};
+
+/// The level where the SPI cannot operate anymore
+#define PM_INVALID_TWI     PM_SLEEPMODE_ADC
+#define PM_INVALID_SPI     PM_SLEEPMODE_ADC
+#define PM_INVALID_UART0   PM_SLEEPMODE_ADC
+#define PM_INVALID_UART1   PM_SLEEPMODE_ADC
+#define PM_INVALID_TIMER0  PM_SLEEPMODE_ADC
+#define PM_INVALID_TIMER1  PM_SLEEPMODE_ADC
+#define PM_INVALID_TIMER2  PM_SLEEPMODE_STANDBY
+#define PM_INVALID_TIMER3  PM_SLEEPMODE_ADC
+#define PM_INVALID_RTC     PM_SLEEPMODE_PWR_DOWN
+
 /**
  * @brief   Available ports on the ATmega1281 family
  */
