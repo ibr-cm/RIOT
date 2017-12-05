@@ -16,6 +16,11 @@ int ad5242_init(ad5242_t *dev, i2c_t i2c, i2c_speed_t speed, uint8_t addr, uint8
 	return 0;
 }
 
+void ad5242_set_opt(ad5242_t *dev, uint8_t opt)
+{
+	dev->opt = opt;
+}
+
 uint8_t ad5242_get_reg(ad5242_t *dev)
 {
 	uint8_t data;
