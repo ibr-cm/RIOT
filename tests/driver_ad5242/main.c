@@ -2,18 +2,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "shell.h"
-#include "ad5242.h"
 #include "periph/i2c.h"
-
-#ifndef TEST_AD5242_OPTIONS
-#error "TEST_AD5242_OPTIONS not defined"
-#endif
-#ifndef TEST_AD5242_I2C_DEV
-#error "TEST_AD5242_I2C_DEV not defined"
-#endif
-#ifndef TEST_AD5242_I2C_ADDR
-#error "TEST_AD5242_I2C_ADDR not defined"
-#endif
+#include "ad5242.h"
+#include "ad5242_params.h"
 
 static ad5242_t ad5242_dev;
 
@@ -63,11 +54,7 @@ int main(void)
 	uint8_t res;
 	char line_buf[SHELL_DEFAULT_BUFSIZE];
 
-	res = ad5242_init(&ad5242_dev,
-			TEST_AD5242_I2C_DEV,
-			I2C_SPEED_NORMAL,
-			TEST_AD5242_I2C_ADDR,
-			TEST_AD5242_OPTIONS);
+	res = ad5242_init(&ad5242_dev, &ad5242_params);
 	if (res != 0) {
 		puts("Cannot initialize ad5242.");
 		return -1;
