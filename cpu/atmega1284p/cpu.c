@@ -45,6 +45,19 @@ SIGNATURE = {
  */
 void cpu_init(void)
 {
-    wdt_disable();
-    periph_init();
+  wdt_disable();
+  power_all_disable();
+  /*
+  power_spi_disable();
+  power_usart0_disable();
+  power_usart1_disable();
+  power_twi_disable();
+  power_adc_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_timer2_disable();
+  power_timer3_disable();
+  */
+
+  periph_init();
 }
