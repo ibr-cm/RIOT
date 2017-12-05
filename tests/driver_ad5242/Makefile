@@ -2,7 +2,6 @@ APPLICATION = driver_ad5242
 include ../Makefile.tests_common
 
 USEMODULE += shell shell_commands ad5242
-FEATURES_REQUIRED += periph_i2c
 
 TEST_AD5242_OPTIONS ?= AD5242_CHN_A
 TEST_AD5242_I2C_DEV ?= I2C_DEV\(0\)
