@@ -151,3 +151,6 @@ endif
 ifneq (,$(filter hts221,$(USEMODULE)))
   USEMODULE_INCLUDES += $(RIOTBASE)/drivers/hts221/include
 endif
+ifneq (, $(filter ad5242,$(USEMODULE)))
+  USEMODULE_INCLUDES += $(RIOTBASE)/drivers/ad5242/include
+endif
