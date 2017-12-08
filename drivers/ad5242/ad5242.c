@@ -1,3 +1,23 @@
+/*
+ * Copyright (C) 2017 Rasmus Antons <r.antons@tu-bs.de>
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser
+ * General Public License v2.1. See the file LICENSE in the top level
+ * directory for more details.
+ */
+
+/**
+ * @ingroup     drivers_ad5242
+ * @{
+ *
+ * @file
+ * @brief       Driver for ad5242.
+ *
+ * @author      Rasmus Antons <r.antons@tu-bs.de>
+ *
+ * @}
+ */
+
 #include "ad5242.h"
 #include <assert.h>
 
