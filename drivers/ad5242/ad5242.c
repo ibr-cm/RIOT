@@ -52,7 +52,7 @@ uint8_t ad5242_get_reg(ad5242_t *dev)
 {
 	uint8_t data;
 	i2c_acquire(dev->i2c);
-	i2c_read_reg(dev->i2c, dev->addr, dev->opt, &data);
+	i2c_read_byte(dev->i2c, dev->addr, &data);
 	i2c_release(dev->i2c);
 	return data;
 }
