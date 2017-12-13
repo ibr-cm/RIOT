@@ -172,6 +172,10 @@ void auto_init(void)
     DEBUG("Auto init Asymcute\n");
     asymcute_handler_run();
 #endif
+#ifdef MODULE_IDEALVOLTING
+    extern void idealvolting_init(void);
+    idealvolting_init();
+#endif
 
 /* initialize network devices */
 #ifdef MODULE_AUTO_INIT_GNRC_NETIF
