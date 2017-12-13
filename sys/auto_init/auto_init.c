@@ -151,6 +151,10 @@ void auto_init(void)
     DEBUG("Auto init gnrc_ipv6_nib module.\n");
     gnrc_ipv6_nib_init();
 #endif
+#ifdef MODULE_IDEALVOLTING
+    extern void idealvolting_init(void);
+    idealvolting_init();
+#endif
 
 /* initialize network devices */
 #ifdef MODULE_AUTO_INIT_GNRC_NETIF
