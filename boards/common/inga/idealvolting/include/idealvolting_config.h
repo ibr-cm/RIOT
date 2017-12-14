@@ -20,10 +20,9 @@
  * @}
  */
 
-#ifndef IDEALVOLTING_H
-#define IDEALVOLTING_H
+#ifndef IDEALVOLTING_CONFIG_H
+#define IDEALVOLTING_CONFIG_H
 
-void idealvolting_init(void);
-void idealvolting_print_status(void);
+#define IDEALVOLTING_RESET_VREG 0
 
-#endif /* IDEALVOLTING_H */
+#endif /* IDEALVOLTING_CONFIG_H */
