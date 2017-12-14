@@ -1,8 +1,10 @@
 USEMODULE += boards_common_inga
 
 export FLASHER = avrdude
+
 # JTAG ICE mkII
-export FFLAGS = -c jtag2isp -p m1284p -P usb -u -U flash:w:$(HEXFILE)
+PROGRAMMER ?= jtag2isp
+export FFLAGS = -c $(PROGRAMMER) -p m1284p -P usb -u -U flash:w:$(HEXFILE)
 
 export INCLUDES += -I$(RIOTBOARD)/common/inga/include/
 export INCLUDES += -I$(RIOTBOARD)/common/inga/idealvolting/include/
