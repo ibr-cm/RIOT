@@ -1,0 +1,4 @@
+ifneq (,$(filter idealvolting,$(USEMODULE)))
+  USEMODULE += ad5242
+  USEMODULE += xtimer
+endif
