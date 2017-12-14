@@ -1,3 +1,6 @@
 MODULE = board
-DIRS = $(RIOTBOARD)/common/inga $(RIOTBOARD)/common/inga/idealvolting
+DIRS = $(RIOTBOARD)/common/inga
+ifneq (,$(filter idealvolting,$(USEMODULE)))
+  DIRS += $(RIOTBOARD)/common/inga/idealvolting
+endif
 include $(RIOTBASE)/Makefile.base
