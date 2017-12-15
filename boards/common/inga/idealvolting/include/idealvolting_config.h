@@ -25,12 +25,7 @@
 
 #define SI_I2C_DEV        I2C_DEV(0)
 #define SI_I2C_ADDR       0x2d
-#define SI_REG_LOCK       0
-#define SI_REG_REPLY      0x01
-#define SI_BUSY           0
-#define SI_READY          1
-#define SI_BOOTING        2
 
-#define IV_RESET_VREG     0
+#define IV_RESET_VREG     128
 
 #endif /* IDEALVOLTING_CONFIG_H */
