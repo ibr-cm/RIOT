@@ -37,6 +37,11 @@ void board_init(void)
     /* initialize the CPU */
     cpu_init();
 
+    /* Set the OSCCAL to the default value if available */
+#ifdef DEFAULT_OSCCAL
+    OSCCAL = DEFAULT_OSCCAL;
+#endif
+
     /* initialize STDIO over UART */
     uart_stdio_init();
     stdout = &uart_stdout;
