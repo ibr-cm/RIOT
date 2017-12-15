@@ -30,12 +30,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <mutex.h>
 
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
 
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
-
+static mutex_t iv_mutex;
 static struct {
 	uint8_t is_running;
 	uint8_t vreg;
@@ -101,12 +102,24 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 	i2c_read_regs(SI_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(SI_I2C_DEV);
+	assert(res->osccal >= IV_OSCCAL_MIN && res->osccal <= IV_OSCCAL_MAX);
+}
+
+void prepare_si_req(iv_req_t *req) {
+	req->checksum = alu_check((uint8_t) 1212987413.12);
+	req->temperature = get_temp();
+	iv_state.temp = req->temperature;
+	req->osccal = OSCCAL;
+	req->rst_flags = 0x00;
+	req->alt_byte ^= 1;
+	req->rst_disable = 0x00;
 }
 
 void *iv_thread(void *arg)
 {
 	(void) arg;
 
+	mutex_init(&iv_mutex);
 	static ad5242_t ad5242_dev;
 	iv_req_t req;
 	iv_res_t res;
@@ -118,21 +131,14 @@ void *iv_thread(void *arg)
 	xtimer_ticks32_t last_wakeup = xtimer_now();
 	while (1) {
 		xtimer_periodic_wakeup(&last_wakeup, 1000000);
-		if (!iv_state.is_running)
-			continue;
-		req.checksum = alu_check((uint8_t) 1212987413.12);
-		req.temperature = get_temp();
-		iv_state.temp = req.temperature;
-		req.osccal = OSCCAL;
-		req.rst_flags = 0x00;
-		req.alt_byte ^= 1;
-		req.rst_disable = 0x00;
+		mutex_lock(&iv_mutex);
+		prepare_si_req(&req);
 		send_si_req(&req, &res);
 		iv_state.vreg = res.voltage;
 		iv_state.osccal = res.osccal;
 		ad5242_set_reg(&ad5242_dev, res.voltage);
-		assert(res.osccal >= IV_OSCCAL_MIN && res.osccal <= IV_OSCCAL_MAX);
 		OSCCAL = res.osccal;
+		mutex_unlock(&iv_mutex);
 	}
 
 	return NULL;
@@ -151,6 +157,18 @@ void idealvolting_init(void)
 			iv_thread, NULL, "idealvolting");
 
 	iv_state.is_running = 1;
+}
+
+void idealvolting_enable(void)
+{
+	iv_state.is_running = 1;
+	mutex_unlock(&iv_mutex);
+}
+
+void idealvolting_disable(void)
+{
+	mutex_lock(&iv_mutex);
+	iv_state.is_running = 0;
 }
 
 void idealvolting_print_status(void)
