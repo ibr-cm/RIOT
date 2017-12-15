@@ -23,6 +23,14 @@ extern "C" {
 /* the blue inga does not have any LEDs or buttons */
 
 /**
+ * @brief Value that is written to the OSCCAL register on boot
+ *
+ * The ad5242 defaults to a MCU voltage of about 2.28V (max. 3.3V).
+ * The OSCCAL has to be adapted to the current voltage.
+ */
+#define DEFAULT_OSCCAL 0xa6
+
+/**
  * @name    ad5242 configuration
  * @{
  */
