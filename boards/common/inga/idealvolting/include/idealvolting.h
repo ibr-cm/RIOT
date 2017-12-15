@@ -24,6 +24,8 @@
 #define IDEALVOLTING_H
 
 void idealvolting_init(void);
+void idealvolting_enable(void);
+void idealvolting_disable(void);
 void idealvolting_print_status(void);
 
 #endif /* IDEALVOLTING_H */
