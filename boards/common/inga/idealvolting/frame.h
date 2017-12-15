@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+#define SI_REG_LOCK       0x00
+#define SI_REG_REQUEST    0x00
+#define SI_REG_REPLY      0x01
+
+enum {
+	SI_BUSY = 0,
+	SI_READY = 1,
+	SI_BOOTING = 2
+};
+
 typedef struct iv_req {
 	uint8_t checksum;
 	uint8_t temperature;
@@ -13,10 +23,10 @@ typedef struct iv_req {
 } iv_req_t;
 
 typedef struct iv_res {
-	uint8_t lock;
 	uint8_t osccal;
 	uint8_t voltage;
-	uint16_t dt;
+	uint8_t dt_l;
+	uint8_t dt_h;
 	uint8_t debug;
 } iv_res_t;
 
