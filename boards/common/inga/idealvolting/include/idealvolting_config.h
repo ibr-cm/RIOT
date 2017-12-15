@@ -25,6 +25,10 @@
 
 #define SI_I2C_DEV        I2C_DEV(0)
 #define SI_I2C_ADDR       0x2d
+#define SI_I2C_SPEED      I2C_SPEED_NORMAL
+
+#define IV_OSCCAL_MIN     0x9e
+#define IV_OSCCAL_MAX     0xbf
 
 #define IV_RESET_VREG     128
 

@@ -29,6 +29,7 @@
 #include "periph/i2c.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
@@ -38,6 +39,8 @@ static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
 static struct {
 	uint8_t is_running;
 	uint8_t vreg;
+	uint8_t osccal;
+	uint8_t temp;
 } iv_state;
 
 void debug_print_res(iv_res_t *res)
@@ -59,6 +62,18 @@ void debug_print_res(iv_res_t *res)
 			res->debug & (1 << 5) ? "SOFTWARE_RESET ": "");
 }
 
+/*
+ * TODO: move this somewhere else
+ */
+int8_t get_temp(void)
+{
+	uint8_t data;
+	i2c_acquire(I2C_DEV(0));
+	i2c_read_reg(I2C_DEV(0), 0x48, 0x00, &data);
+	i2c_release(I2C_DEV(0));
+	return data;
+}
+
 int wait_si_ready(void)
 {
 	uint8_t si_state;
@@ -75,7 +90,7 @@ int wait_si_ready(void)
 	return i;
 }
 
-int send_si_req(iv_req_t *req, iv_res_t *res)
+void send_si_req(iv_req_t *req, iv_res_t *res)
 {
 	i2c_acquire(SI_I2C_DEV);
 	i2c_write_regs(SI_I2C_DEV, SI_I2C_ADDR,
@@ -86,7 +101,6 @@ int send_si_req(iv_req_t *req, iv_res_t *res)
 	i2c_read_regs(SI_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(SI_I2C_DEV);
-	return 0;
 }
 
 void *iv_thread(void *arg)
@@ -107,15 +121,18 @@ void *iv_thread(void *arg)
 		if (!iv_state.is_running)
 			continue;
 		req.checksum = alu_check((uint8_t) 1212987413.12);
-		req.temperature = 0x15;
-		req.osccal = 0xFF;
+		req.temperature = get_temp();
+		iv_state.temp = req.temperature;
+		req.osccal = OSCCAL;
 		req.rst_flags = 0x00;
 		req.alt_byte ^= 1;
 		req.rst_disable = 0x00;
 		send_si_req(&req, &res);
 		iv_state.vreg = res.voltage;
-		debug_print_res(&res);
+		iv_state.osccal = res.osccal;
 		ad5242_set_reg(&ad5242_dev, res.voltage);
+		assert(res.osccal >= IV_OSCCAL_MIN && res.osccal <= IV_OSCCAL_MAX);
+		OSCCAL = res.osccal;
 	}
 
 	return NULL;
@@ -124,6 +141,10 @@ void *iv_thread(void *arg)
 void idealvolting_init(void)
 {
 	iv_state.is_running = 0;
+
+	i2c_acquire(SI_I2C_DEV);
+	i2c_init_master(SI_I2C_DEV, SI_I2C_SPEED);
+	i2c_release(SI_I2C_DEV);
 
 	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
@@ -135,6 +156,8 @@ void idealvolting_init(void)
 void idealvolting_print_status(void)
 {
 	puts("--------IdealVolting status--------");
-	printf("is_running = %s\n", iv_state.is_running ? "true" : "false");
-	printf("Vreg       = %d\n", iv_state.vreg);
+	printf("is_running  = %s\n", iv_state.is_running ? "true" : "false");
+	printf("Vreg        = %d\n", iv_state.vreg);
+	printf("OSCCAL      = %d\n", iv_state.osccal);
+	printf("Temperature = %d\n", iv_state.temp);
 }

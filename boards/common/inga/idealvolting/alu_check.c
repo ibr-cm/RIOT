@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Ulf Kulau <>
+ * Copyright (C) 2014 Ulf Kulau
  * Copyright (C) 2017 Rasmus Antons <r.antons@tu-bs.de>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
@@ -16,7 +16,7 @@
  * @file
  * @brief       Idealvolting implementation.
  *
- * @author      Ulf Kulau <>
+ * @author      Ulf Kulau
  * @author      Rasmus Antons <r.antons@tu-bs.de>
  *
  * @}
