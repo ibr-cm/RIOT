@@ -28,7 +28,6 @@
 #include "thread.h"
 #include "periph/i2c.h"
 #include <stdio.h>
-#include <stdint.h>
 #include <assert.h>
 #include <mutex.h>
 
@@ -42,6 +41,7 @@ static struct {
 	uint8_t vreg;
 	uint8_t osccal;
 	uint8_t temp;
+	uint8_t debug;
 } iv_state;
 
 void debug_print_res(iv_res_t *res)
@@ -138,6 +138,8 @@ void *iv_thread(void *arg)
 		iv_state.osccal = res.osccal;
 		ad5242_set_reg(&ad5242_dev, res.voltage);
 		OSCCAL = res.osccal;
+		if (iv_state.debug)
+			debug_print_res(&res);
 		mutex_unlock(&iv_mutex);
 	}
 
@@ -147,6 +149,7 @@ void *iv_thread(void *arg)
 void idealvolting_init(void)
 {
 	iv_state.is_running = 0;
+	iv_state.debug = 0;
 
 	i2c_acquire(SI_I2C_DEV);
 	i2c_init_master(SI_I2C_DEV, SI_I2C_SPEED);
@@ -169,6 +172,17 @@ void idealvolting_disable(void)
 {
 	mutex_lock(&iv_mutex);
 	iv_state.is_running = 0;
+}
+
+void idealvolting_set_debug(uint8_t state)
+{
+	if (iv_state.is_running) {
+		mutex_lock(&iv_mutex);
+		iv_state.debug = state;
+		mutex_unlock(&iv_mutex);
+	} else {
+		iv_state.debug = state;
+	}
 }
 
 void idealvolting_print_status(void)
