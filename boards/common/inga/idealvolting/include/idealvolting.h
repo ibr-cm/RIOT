@@ -23,6 +23,8 @@
 #ifndef IDEALVOLTING_H
 #define IDEALVOLTING_H
 
+#include <stdint.h>
+
 /**
  * Initialize IdealVolting
  *
@@ -48,6 +50,16 @@ void idealvolting_enable(void);
  * Tiny will reset the node.
  */
 void idealvolting_disable(void);
+
+
+/**
+ * Set the debug mode state
+ *
+ * If the debug mode is enabled, every incoming frame will be printed out.
+ *
+ * @param state 0 to disable debug mode, non 0 to enable it
+ */
+void idealvolting_set_debug(uint8_t state);
 
 /**
  * Print information about the current state of IdealVolting

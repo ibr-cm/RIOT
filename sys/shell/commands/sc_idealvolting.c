@@ -29,7 +29,12 @@ int _idealvolting_handler(int argc, char **argv)
 	(void) argv;
 
 	if (argc == 1) {
-		printf("Usage: %s [status | enable | disable]\n", argv[0]);
+		printf("Usage: %s \n"
+				"        status\n"
+				"        enable\n"
+				"        disable\n"
+				"        debug on|off\n",
+				argv[0]);
 		return 1;
 	} else if (strcmp("status", argv[1]) == 0) {
 		idealvolting_print_status();
@@ -39,6 +44,16 @@ int _idealvolting_handler(int argc, char **argv)
 	} else if (strcmp("disable", argv[1]) == 0) {
 		idealvolting_disable();
 		puts("IdealVolting is disabled.");
+	} else if (strcmp("debug", argv[1]) == 0) {
+		if (argc == 3 && strcmp("on", argv[2]) == 0) {
+			idealvolting_set_debug(1);
+			puts("Debug mode is on");
+		} else if (argc == 3 && strcmp("off", argv[2]) == 0) {
+			idealvolting_set_debug(0);
+			puts("Debug mode is off");
+		} else {
+			printf("Usage: %s debug on|off", argv[0]);
+		}
 	} else {
 		printf("Unknown command: %s\n", argv[1]);
 	}
