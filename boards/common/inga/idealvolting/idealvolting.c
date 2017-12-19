@@ -38,40 +38,19 @@ static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
 static mutex_t iv_mutex;
 static struct {
 	uint8_t is_running;
+	uint8_t debug;
 	uint8_t vreg;
 	uint8_t osccal;
 	uint8_t temp;
-	uint8_t debug;
+	uint8_t table;
 } iv_state;
 
-void debug_print_res(iv_res_t *res)
-{
-	printf("Response Frame:\n"
-			"    osccal  = %u\n"
-			"    voltage = %u\n"
-			"    dt      = %u\n"
-			"    debug:\n"
-			"        state = %d\n"
-			"        table = %d\n"
-			"        flags = %s%s%s\n",
-			res->osccal, res->voltage,
-			res->dt_l | (res->dt_h << 8),
-			res->debug & (3),
-			(res->debug >> 6) & (3),
-			res->debug & (1 << 3) ? "TABLE_ENTRY ": "",
-			res->debug & (1 << 4) ? "HARDWARE_RESET ": "",
-			res->debug & (1 << 5) ? "SOFTWARE_RESET ": "");
-}
-
-/*
- * TODO: move this somewhere else
- */
 int8_t get_temp(void)
 {
 	uint8_t data;
-	i2c_acquire(I2C_DEV(0));
-	i2c_read_reg(I2C_DEV(0), 0x48, 0x00, &data);
-	i2c_release(I2C_DEV(0));
+	i2c_acquire(IV_I2C_DEV);
+	i2c_read_reg(IV_I2C_DEV, TMP_ADDR, TMP_REG, &data);
+	i2c_release(IV_I2C_DEV);
 	return data;
 }
 
@@ -82,10 +61,10 @@ int wait_si_ready(void)
 	i = 0;
 	do {
 		++i;
-		i2c_acquire(SI_I2C_DEV);
-		i2c_read_reg(SI_I2C_DEV, SI_I2C_ADDR,
+		i2c_acquire(IV_I2C_DEV);
+		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
-		i2c_release(SI_I2C_DEV);
+		i2c_release(IV_I2C_DEV);
 		xtimer_usleep(100);
 	} while (si_state != SI_READY);
 	return i;
@@ -93,15 +72,15 @@ int wait_si_ready(void)
 
 void send_si_req(iv_req_t *req, iv_res_t *res)
 {
-	i2c_acquire(SI_I2C_DEV);
-	i2c_write_regs(SI_I2C_DEV, SI_I2C_ADDR,
+	i2c_acquire(IV_I2C_DEV);
+	i2c_write_regs(IV_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REQUEST, req, sizeof(*req));
-	i2c_release(SI_I2C_DEV);
+	i2c_release(IV_I2C_DEV);
 	wait_si_ready();
-	i2c_acquire(SI_I2C_DEV);
-	i2c_read_regs(SI_I2C_DEV, SI_I2C_ADDR,
+	i2c_acquire(IV_I2C_DEV);
+	i2c_read_regs(IV_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REPLY, res, sizeof(*res));
-	i2c_release(SI_I2C_DEV);
+	i2c_release(IV_I2C_DEV);
 	assert(res->osccal >= IV_OSCCAL_MIN && res->osccal <= IV_OSCCAL_MAX);
 }
 
@@ -136,10 +115,9 @@ void *iv_thread(void *arg)
 		send_si_req(&req, &res);
 		iv_state.vreg = res.voltage;
 		iv_state.osccal = res.osccal;
+		iv_state.table = (res.debug >> 6) & (3);
 		ad5242_set_reg(&ad5242_dev, res.voltage);
 		OSCCAL = res.osccal;
-		if (iv_state.debug)
-			debug_print_res(&res);
 		mutex_unlock(&iv_mutex);
 	}
 
@@ -151,9 +129,9 @@ void idealvolting_init(void)
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
 
-	i2c_acquire(SI_I2C_DEV);
-	i2c_init_master(SI_I2C_DEV, SI_I2C_SPEED);
-	i2c_release(SI_I2C_DEV);
+	i2c_acquire(IV_I2C_DEV);
+	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+	i2c_release(IV_I2C_DEV);
 
 	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
@@ -164,6 +142,7 @@ void idealvolting_init(void)
 
 void idealvolting_enable(void)
 {
+	mutex_lock(&iv_mutex);
 	iv_state.is_running = 1;
 	mutex_unlock(&iv_mutex);
 }
@@ -172,24 +151,24 @@ void idealvolting_disable(void)
 {
 	mutex_lock(&iv_mutex);
 	iv_state.is_running = 0;
+	mutex_unlock(&iv_mutex);
 }
 
 void idealvolting_set_debug(uint8_t state)
 {
-	if (iv_state.is_running) {
-		mutex_lock(&iv_mutex);
-		iv_state.debug = state;
-		mutex_unlock(&iv_mutex);
-	} else {
-		iv_state.debug = state;
-	}
+	mutex_lock(&iv_mutex);
+	iv_state.debug = state;
+	mutex_unlock(&iv_mutex);
 }
 
 void idealvolting_print_status(void)
 {
+	mutex_lock(&iv_mutex);
 	puts("--------IdealVolting status--------");
 	printf("is_running  = %s\n", iv_state.is_running ? "true" : "false");
 	printf("Vreg        = %d\n", iv_state.vreg);
 	printf("OSCCAL      = %d\n", iv_state.osccal);
 	printf("Temperature = %d\n", iv_state.temp);
+	printf("Table used  = %s\n", iv_state.table ? "true" : "false");
+	mutex_unlock(&iv_mutex);
 }
