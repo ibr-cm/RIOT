@@ -51,6 +51,7 @@
 #include <avr/io.h>
 #include "drv/adc-drv.h"
 #include "math.h"
+#include "../include/idealvolting_config.h"
 
 #include "frame.h"
 
@@ -81,7 +82,7 @@ struct table_entry {
 #define SI_VOLT_REG_OFFSET                      130//128///200// für 4mhz200
 #define SI_VOLT_REG_RESET   140
 #define SI_DEFAULT_VOLT_OFFSET                  4
-#define SI_RIGHT_CHECKSUM                       19
+#define SI_RIGHT_CHECKSUM                       MCU_CHECK_RESULT_CORRECT
 #define MATRIX_SIZE                             4
 #define SI_ADAPTION_INTERVAL                    5
 #define SI_DELTA_T_MARGIN                       25
@@ -221,7 +222,11 @@ int main(void) {
 			 * Controlled undervolting is delayed by some cycles */
 			if (startup > 0) {
 				startup--;
-				delta_t = 16000;//TCNT1;
+#if USE_MEGA_CLOCK
+				delta_t = TCNT1;
+#else
+				delta_t = 16000;
+#endif
 				TCNT1 = 0;
 				SI_REPLY_DELTA_T(delta_t);
 			} else {

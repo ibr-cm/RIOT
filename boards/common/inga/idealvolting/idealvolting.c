@@ -35,7 +35,7 @@
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
 
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
-static mutex_t iv_mutex;
+static mutex_t iv_mutex, iv_disable;
 static struct {
 	uint8_t is_running;
 	uint8_t debug;
@@ -85,7 +85,7 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 }
 
 void prepare_si_req(iv_req_t *req) {
-	req->checksum = alu_check((uint8_t) 1212987413.12);
+	req->checksum = MCU_CHECK();
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
 	req->osccal = OSCCAL;
@@ -111,6 +111,8 @@ void *iv_thread(void *arg)
 	while (1) {
 		xtimer_periodic_wakeup(&last_wakeup, 1000000);
 		mutex_lock(&iv_mutex);
+		mutex_lock(&iv_disable);
+		mutex_unlock(&iv_disable);
 		prepare_si_req(&req);
 		send_si_req(&req, &res);
 		iv_state.vreg = res.voltage;
@@ -143,6 +145,7 @@ void idealvolting_init(void)
 void idealvolting_enable(void)
 {
 	mutex_lock(&iv_mutex);
+	mutex_unlock(&iv_disable);
 	iv_state.is_running = 1;
 	mutex_unlock(&iv_mutex);
 }
@@ -150,6 +153,7 @@ void idealvolting_enable(void)
 void idealvolting_disable(void)
 {
 	mutex_lock(&iv_mutex);
+	mutex_unlock(&iv_disable);
 	iv_state.is_running = 0;
 	mutex_unlock(&iv_mutex);
 }
