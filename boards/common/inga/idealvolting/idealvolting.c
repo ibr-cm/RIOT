@@ -20,7 +20,7 @@
 
 #include "idealvolting.h"
 #include "idealvolting_config.h"
-#include "frame.h"
+#include "idealvolting_frame.h"
 #include "alu_check.h"
 #include "ad5242.h"
 #include "ad5242_params.h"
@@ -43,7 +43,9 @@ static struct {
 	uint8_t osccal;
 	uint8_t temp;
 	uint8_t table;
+	uint8_t swr_happened;
 } iv_state;
+static uint8_t swr_detection = 0;
 
 int8_t get_temp(void)
 {
@@ -54,20 +56,32 @@ int8_t get_temp(void)
 	return data;
 }
 
-int wait_si_ready(void)
+uint8_t check_reset(void)
+{
+	if (MCUSR & 0b00000001) { //Power On
+		MCUSR &= 0b11111110;
+		return 0;
+	} else if (MCUSR & 0b00000010) { //HW Reset
+		MCUSR &= 0b11111101;
+		return 1;
+	} else if (swr_detection) { //SW Reset
+		iv_state.swr_happened = 1;
+		swr_detection = 1;
+		return 2;
+	}
+	return 0;
+}
+
+void wait_si_ready(void)
 {
 	uint8_t si_state;
-	uint8_t i;
-	i = 0;
 	do {
-		++i;
 		i2c_acquire(IV_I2C_DEV);
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
 		i2c_release(IV_I2C_DEV);
 		xtimer_usleep(100);
 	} while (si_state != SI_READY);
-	return i;
 }
 
 void send_si_req(iv_req_t *req, iv_res_t *res)
@@ -82,16 +96,17 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(IV_I2C_DEV);
 	assert(res->osccal >= IV_OSCCAL_MIN && res->osccal <= IV_OSCCAL_MAX);
+	DEBUG_PRINT_REQ(req);
+	DEBUG_PRINT_RES(res);
 }
 
 void prepare_si_req(iv_req_t *req) {
 	req->checksum = MCU_CHECK();
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
+	req->rst_flags = check_reset();
 	req->osccal = OSCCAL;
-	req->rst_flags = 0x00;
 	req->alt_byte ^= 1;
-	req->rst_disable = 0x00;
 }
 
 void *iv_thread(void *arg)
@@ -103,9 +118,12 @@ void *iv_thread(void *arg)
 	iv_req_t req;
 	iv_res_t res;
 
-	ad5242_init(&ad5242_dev, &ad5242_params);
+	mutex_lock(&iv_mutex);
 	req.alt_byte = 0;
+	req.rst_disable = 0x00;
+	ad5242_init(&ad5242_dev, &ad5242_params);
 	wait_si_ready();
+	mutex_unlock(&iv_mutex);
 
 	xtimer_ticks32_t last_wakeup = xtimer_now();
 	while (1) {
@@ -130,6 +148,7 @@ void idealvolting_init(void)
 {
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
+	iv_state.swr_happened = 0;
 
 	i2c_acquire(IV_I2C_DEV);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
@@ -174,5 +193,7 @@ void idealvolting_print_status(void)
 	printf("OSCCAL      = %d\n", iv_state.osccal);
 	printf("Temperature = %d\n", iv_state.temp);
 	printf("Table used  = %s\n", iv_state.table ? "true" : "false");
+	if (iv_state.swr_happened)
+		puts("THERE HAS BEEN A SOFTWARE RESET!");
 	mutex_unlock(&iv_mutex);
 }

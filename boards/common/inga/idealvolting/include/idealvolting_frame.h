@@ -24,6 +24,9 @@
 #include <stdint.h>
 #include "idealvolting_config.h"
 
+#define REQUEST_FRAME_SIZE sizeof(iv_req_t)
+#define REPLY_FRAME_SIZE (sizeof(iv_res_t) + 1)
+
 /**
  * @name Virtual register addresses when reading from the Tiny.
  * @{
