@@ -21,14 +21,16 @@ SOURCES_TINY= \
               i2c-master.c \
               i2c-slave.c \
               tiny.c \
+              sw_uart.c \
               ${EMPTY}
 
 HEADERS_TINY= \
-              frame.h \
               i2c-master.h \
               i2c-slave.h \
               usi.h \
+              sw_uart.h \
               ../include/idealvolting_config.h \
+              ../include/idealvolting_frame.h \
               ${EMPTY}
 
 OBJECTS_TINY=$(shell echo "${SOURCES_TINY}" | sed -e 's/\.c/\.o/g')
