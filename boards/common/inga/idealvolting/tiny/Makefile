@@ -28,6 +28,7 @@ HEADERS_TINY= \
               i2c-master.h \
               i2c-slave.h \
               usi.h \
+              ../include/idealvolting_config.h \
               ${EMPTY}
 
 OBJECTS_TINY=$(shell echo "${SOURCES_TINY}" | sed -e 's/\.c/\.o/g')
