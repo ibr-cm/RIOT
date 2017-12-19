@@ -27,9 +27,11 @@
  * @name I2C configuration
  * @{
  */
-#define SI_I2C_DEV        I2C_DEV(0)       /*< I2C device */
+#define IV_I2C_DEV        I2C_DEV(0)       /*< I2C device */
 #define SI_I2C_ADDR       0x2d             /*< Address of the Tiny */
 #define SI_I2C_SPEED      I2C_SPEED_NORMAL /*< I2C Speed */
+#define TMP_ADDR          0x48             /*< Address of the temp sensor */
+#define TMP_REG           0x00             /*< Register to read temp byte */
 /* @} */
 
 /**
