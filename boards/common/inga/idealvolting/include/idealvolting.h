@@ -25,6 +25,34 @@
 
 #include <stdint.h>
 
+#define DEBUG_PRINT_REQ(req) printf("Request Frame:\n" \
+		"    temperature = %u\n" \
+		"    osccal      = %u\n" \
+		"    rst_flags   = %x\n" \
+		"    alt_byte    = %u\n" \
+		"    rst_disable = %x\n", \
+		(req)->temperature, \
+		(req)->osccal, \
+		(req)->rst_flags, \
+		(req)->alt_byte, \
+		(req)->rst_disable); \
+
+#define DEBUG_PRINT_RES(res) printf("Response Frame:\n" \
+		"    osccal  = %u\n" \
+		"    voltage = %u\n" \
+		"    dt      = %u\n" \
+		"    debug:\n" \
+		"        state = %d\n" \
+		"        table = %d\n" \
+		"        flags = %s%s%s\n", \
+		(res)->osccal, (res)->voltage, \
+		(res)->dt_l | ((res)->dt_h << 8), \
+		(res)->debug & (3), \
+		((res)->debug >> 6) & (3), \
+		(res)->debug & (1 << 3) ? "TABLE_ENTRY ": "", \
+		(res)->debug & (1 << 4) ? "HARDWARE_RESET ": "", \
+		(res)->debug & (1 << 5) ? "SOFTWARE_RESET ": ""); \
+
 /**
  * Initialize IdealVolting
  *
