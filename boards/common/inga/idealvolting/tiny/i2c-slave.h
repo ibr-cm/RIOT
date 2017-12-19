@@ -56,7 +56,7 @@
 
 /* Includes*/
 #include <stdbool.h>
-#include "frame.h"
+#include "../include/idealvolting_frame.h"
 
 /* Defines*/
 #define buffer_size 6						    //tx-rx frame size
