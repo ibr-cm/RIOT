@@ -24,6 +24,12 @@
 #define IDEALVOLTING_CONFIG_H
 
 /**
+ * @brief On the Tiny, synchronize the frame interval to the Megs's clock
+ * on start
+ */
+#define USE_MEGA_CLOCK 0
+
+/**
  * @name I2C configuration
  * @{
  */
@@ -47,5 +53,14 @@
  * @brief Initial voltage register value
  */
 #define IV_RESET_VREG     128
+
+/**
+ * @brief MCU self check configuration
+ * @{
+ */
+#define MCU_CHECK()       alu_check((uint8_t) 1212987413.12)
+#define MCU_CHECK_RESULT_TYPE     uint8_t
+#define MCU_CHECK_RESULT_CORRECT  19
+/* @} */
 
 #endif /* IDEALVOLTING_CONFIG_H */

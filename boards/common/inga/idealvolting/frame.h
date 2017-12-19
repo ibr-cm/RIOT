@@ -22,6 +22,7 @@
 #define IV_FRAME_H
 
 #include <stdint.h>
+#include "idealvolting_config.h"
 
 /**
  * @name Virtual register addresses when reading from the Tiny.
@@ -50,10 +51,15 @@ enum {
 /* @} */
 
 /**
+ * @brief Data type of the MCU check result
+ */
+typedef MCU_CHECK_RESULT_TYPE mcu_check_result_t;
+
+/**
  * @brief Request frame sent to the Tiny
  */
 typedef struct iv_req {
-	uint8_t checksum;    /**< MCU self test result */
+	mcu_check_result_t checksum;    /**< MCU self test result */
 	int8_t temperature;  /**< Current temperature in °C */
 	uint8_t osccal;      /**< Current OSCCAL value */
 	uint8_t rst_flags;   /**< Hardware/Software resets */
