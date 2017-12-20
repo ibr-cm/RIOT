@@ -1,5 +1,6 @@
 #include "sw_uart.h"
 
+static int sw_uart_putchar(char c, FILE *stream);
 static FILE sw_uart_stdout = FDEV_SETUP_STREAM(sw_uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 void sw_uart_init(void){
@@ -98,5 +99,5 @@ static int sw_uart_putchar(char c, FILE *stream) {
 
 
 void sw_uart_puts(const char *s){
-         while (*s) uart_putc(*(s++));
+         while (*s) sw_uart_putc(*(s++));
 }

@@ -31,4 +31,3 @@ char sw_uart_getc(void);
 #endif
 void sw_uart_putc(char c);
 void sw_uart_puts(const char *s);
-static int sw_uart_putchar(char c, FILE *stream);
