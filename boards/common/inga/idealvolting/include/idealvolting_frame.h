@@ -76,8 +76,7 @@ typedef struct iv_req {
 typedef struct iv_res {
 	uint8_t osccal;  /**< Suggested OSCCAL value */
 	uint8_t voltage; /**< Suggested voltage register value */
-	uint8_t dt_l;    /**< Ticks between last requests (lower bits) */
-	uint8_t dt_h;    /**< Ticks between last requests (higher bits) */
+	uint16_t dt;    /**< Ticks between last requests */
 	uint8_t debug;   /**< Debug byte */
 } iv_res_t;
 

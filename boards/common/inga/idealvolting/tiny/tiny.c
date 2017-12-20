@@ -66,74 +66,75 @@ struct table_entry {
 	uint8_t info;
 };
 
-#define SLAVE_ADDR_ATTINY                       0x5A
-
 #ifndef F_CPU
 #define F_CPU 1000000UL
 #endif
 
-#define SI_INIT                                 0
-#define SI_TRANSIENT                            1
-#define SI_MAIN                                 2
-#define SI_IDLE                                 3
-#define SI_RESET                                4
-#define SI_DEBUG                                5
+#define SI_INIT                             0
+#define SI_TRANSIENT                        1
+#define SI_MAIN                             2
+#define SI_IDLE                             3
+#define SI_RESET                            4
+#define SI_DEBUG                            5
 
-#define SI_STARTUP_DELAY                        7
-#define SI_VOLT_REG_OFFSET                      130//128///200// für 4mhz200
-#define SI_VOLT_REG_RESET                       140
-#define SI_DEFAULT_VOLT_OFFSET                  4
-#define MATRIX_SIZE                             4
-#define SI_ADAPTION_INTERVAL                    5
-#define SI_DELTA_T_MARGIN                       25
-#define SI_TEMP_OFFSET                          25
+#define SI_STARTUP_DELAY                    7
+#define SI_VOLT_REG_OFFSET                  130//128///200// für 4mhz200
+#define SI_VOLT_REG_RESET                   140
+#define SI_DEFAULT_VOLT_OFFSET              4
+#define MATRIX_SIZE                         4
+#define SI_ADAPTION_INTERVAL                5
+#define SI_DELTA_T_MARGIN                   25
+#define SI_TEMP_OFFSET                      25
 
-#define SI_PREDICTION_THRESHOLD                 7
-#define SI_TABLE_SIZE                           51
-#define SI_TABLE_EEPROM_START_ADDR              2 // must be > 0
-#define SI_TABLE_VALUE_IS_EMPTY                 0xFF
-#define SI_TABLE_VALUE_IS_MEASURED              0x01
-#define SI_TABLE_VALUE_IS_PREDICTED             0x02
-#define SI_TABLE_PREDICTION                     0x03
+#define SI_PREDICTION_THRESHOLD             7
+#define SI_TABLE_SIZE                       51
+#define SI_TABLE_VALUE_IS_EMPTY             0xFF
+#define SI_TABLE_VALUE_IS_MEASURED          0x01
+#define SI_TABLE_VALUE_IS_PREDICTED         0x02
+#define SI_TABLE_PREDICTION                 0x03
 
-#define SI_PWR_MONITOR_ICC_ADC                  ADC_CHANNEL_1
-#define SI_PWR_MONITOR_VCC_ADC                  ADC_CHANNEL_0
+#define EEPROM_ADDR_AVAIL                   ((void *) 0x00)
+#define EEPROM_ADDR_VOFF                    ((void *) 0x01)
+#define EEPROM_ADDR_TABLE                   ((void *) 0x02)
 
-#define SI_LOCK()                               0
-#define SI_UNLOCK()                             1
-#define SI_BOOTING()                            2
+#define SI_PWR_MONITOR_ICC_ADC              ADC_CHANNEL_1
+#define SI_PWR_MONITOR_VCC_ADC              ADC_CHANNEL_0
 
-#define SI_REPLY_OSCCAL_FB(feedback)            res_buffer->osccal = feedback;
-#define SI_REPLY_VOLTAGE(volt_value)            res_buffer->voltage = volt_value;
-#define SI_REPLY_DELTA_T(cnt_value)             res_buffer->dt_l = cnt_value;\
-                                                res_buffer->dt_h = (cnt_value >> 8)
+#define SI_LOCK()                           *lock_buffer = 0
+#define SI_UNLOCK()                         *lock_buffer = 1
+#define SI_BOOTING()                        *lock_buffer = 2
 
-#define SI_REPLY_DEBUG_RESET()                  res_buffer->debug = 0x00
-#define SI_REPLY_DEBUG_STATE(current_state)     res_buffer->debug |= current_state
-#define SI_REPLY_DEBUG_TABLE_ENTRY()            res_buffer->debug |= (1 << 3)
-#define SI_REPLY_DEBUG_RESET_HW()               res_buffer->debug |= (1 << 4)
-#define SI_REPLY_DEBUG_RESET_SW()               res_buffer->debug |= (1 << 5)
-#define SI_REPLY_DEBUG_TABLE_USED(info)         res_buffer->debug |= (info << 6)
-/*#define SI_REPLY_DEBUG_BATT_STATE(value)        txbuffer[6] = value;\
-                                                txbuffer[7] = (value >> 8)*/
+#define SI_REPLY_DEBUG_RESET()              res_buffer->debug = 0x00
+#define SI_REPLY_DEBUG_STATE(current_state) res_buffer->debug |= current_state
+#define SI_REPLY_DEBUG_TABLE_ENTRY()        res_buffer->debug |= (1 << 3)
+#define SI_REPLY_DEBUG_RESET_HW()           res_buffer->debug |= (1 << 4)
+#define SI_REPLY_DEBUG_RESET_SW()           res_buffer->debug |= (1 << 5)
+#define SI_REPLY_DEBUG_TABLE_USED(info)     res_buffer->debug |= (info << 6)
 
-#define SI_STAY_IN_DEBUG                        1
+#define SI_STAY_IN_DEBUG                    1
 
-#define SI_INIT_RESET_LINE()                    DDRA |= (1<<PA7)    //0b00000100 set PB2 to Output
-#define SI_PULL_RESET_LINE()                    PORTA |= (1<<PA7)   //0b00000100 set PB2 to 1
-#define SI_RELEASE_RESET_LINE()                 PORTA &= ~(1<<PA7)  // set PB2 to 0
-#define MCU_HW_RESET                            0x01
-#define MCU_SW_RESET                            0x02
-
-#define EEPROM_ADD 0x00
+#define SI_INIT_RESET_LINE()                DDRA |= (1<<PA7)    //0b00000100 set PB2 to Output
+#define SI_PULL_RESET_LINE()                PORTA |= (1<<PA7)   //0b00000100 set PB2 to 1
+#define SI_RELEASE_RESET_LINE()             PORTA &= ~(1<<PA7)  // set PB2 to 0
+#define MCU_HW_RESET                        0x01
+#define MCU_SW_RESET                        0x02
 
 ///Deadlock Reset
-#define DEADLOCK_THRESHOLD                      3 //overflows corresponds to a deadlock situation
+#define DEADLOCK_THRESHOLD                  3 //overflows corresponds to a deadlock situation
 ///Digital Potentiometer Reset Software i2c
-#define AD5242_DEV_ADDR_W                       0x58
-#define AD5242_CHN_A                            0x00
+#define AD5242_DEV_ADDR_W                   0x58
+#define AD5242_CHN_A                        0x00
 
-#define SI_STEP                                 10
+#define SI_STEP                             10
+
+#if USE_MEGA_CLOCK
+#define DT_TARGET_SRC TCNT1;
+#else
+#define DT_TARGET_SRC 16000;
+#endif
+
+#define REPORT_PERIODIC                     'p'
+#define REPORT_ERROR                        'e'
 
 static iv_req_t *req_buffer = (iv_req_t *) rxbuffer;
 static uint8_t *lock_buffer = (uint8_t *) txbuffer;
@@ -164,57 +165,331 @@ static uint8_t fact_default;
 struct table_entry table[SI_TABLE_SIZE];
 
 /* FUNCTION DECLARARTIONS */
-void init_SI();
+void init_table(void);
 void reset_voltage_level(void);
 void prediction(void);
 uint8_t get_table_status(void);
 void erase_eeprom(void);
+void send_report(char report_type);
 
+/*
+ * Reset voltage, set initial values, initialize timers, start UART and i2c
+ */
+void si_init(void)
+{
+	cli();
+	SI_LOCK();
 
-/* MAIN ROUTINE */
+	/* Reset Voltage to normal level when SI is reset */
+	SI_INIT_RESET_LINE();
+	SI_PULL_RESET_LINE();
+	_delay_ms(100);
+	reset_voltage_level();
+	_delay_ms(100);
+	SI_RELEASE_RESET_LINE();
 
-/* ToDo: shut-down pin implememtieren, sodass die Programierfunktion nicht beeinträchtigt wird 
+	sw_uart_init();
+	/* This I2C implementation uses a different address notation */
+	i2c_slave_init(SI_I2C_ADDR << 1);
+
+	/* Timer Initialization, Settings:
+	 * Prescaler 8, Overflow Interrupt every ~0.5s
+	 * (maybe prsc32 would be better?)
+	 */
+	TCCR1A = 0b00000000;
+	TCCR1B = 0b00000011;
+	TIMSK1 |= (1 << TOIE1);
+	TCNT1 = 0;
+
+	/* Enable external Watchdog*/ //ToDo!!
+	req_buffer->rst_disable = 0x00;
+	startup = SI_STARTUP_DELAY;
+	iteration = 0;
+	current_voltage = SI_VOLT_REG_OFFSET;
+	init_table();
+
+	sei();
+	req_buffer->alt_byte = 0;
+	SI_UNLOCK();
+}
+
+void si_frame_received(void)
+{
+	/* Lock SI and copy current alternating byte */
+	SI_LOCK();
+	this_altbyte = req_buffer->alt_byte;
+	/* Reset watchdog*/
+	count_overflows = 0;
+	/* Readout OSCALL Value from man MCU.
+	 * Get Temperature and add offset due to negative values */
+	fact_default = req_buffer->osccal; //??
+	checksum = MCU_CHECK_RESULT_CORRECT; //validate(rxbuffer[mcu_temperature]);
+	this_temperature = req_buffer->temperature;
+	this_temperature += SI_TEMP_OFFSET;
+	/* DEBUG ONLY:*/
+	SI_REPLY_DEBUG_RESET();
+	SI_REPLY_DEBUG_STATE(next_state);
+	/* Request Frame was received => switch to next_frame*/
+	error = 0;
+	state = next_state;
+}
+
+void si_transient(void)
+{
+	/* After startup the system is in transient state.
+	 * Controlled undervolting is delayed by some cycles */
+	if (startup > 0) {
+		startup--;
+		delta_t = DT_TARGET_SRC;
+		TCNT1 = 0;
+		res_buffer->dt = delta_t;
+	} else {
+		/* Backup default OSCALL value before controlled undervolting starts*/
+		fact_default = req_buffer->osccal;
+		prv_temperature = this_temperature;
+		next_state = SI_MAIN;
+	}
+	/* Reply of OSCALL and Voltage Level*/
+	res_buffer->osccal = req_buffer->osccal;
+	res_buffer->voltage = current_voltage;
+	/*If EEPROM data are available, the voltage potential 128->~200 is too heavy */
+	uint8_t entry_is_empty =
+			table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY;
+	if(eeprom_table_available || entry_is_empty) {
+		current_voltage += SI_STEP;
+		current_index = ((uint8_t) (this_temperature) >> 1);
+		if (current_voltage <= table[(current_index)].voltage) {
+			res_buffer->voltage = current_voltage;
+		} else {
+			res_buffer->voltage = table[(current_index)].voltage;
+			current_voltage = res_buffer->voltage;
+		}
+	}
+	/* If a reset occured, send this information to MCU*/
+	if (req_buffer->rst_flags == MCU_HW_RESET) {
+		SI_REPLY_DEBUG_RESET_HW();
+	} else if (req_buffer->rst_flags == MCU_SW_RESET) {
+		SI_REPLY_DEBUG_RESET_SW();
+	}
+	/* Unlock SI and get back to IDLE state*/
+	SI_UNLOCK();
+}
+
+/*
+ * Increase the voltage and write table entry if it doesn't exist yet.
+ * Try to predict table values.
+ */
+void si_main_error(void)
+{
+	current_voltage -= SI_DEFAULT_VOLT_OFFSET;
+	alu_errors++;
+	table[(current_index)].voltage = current_voltage;
+	table[(current_index)].osccal = req_buffer->osccal;
+	if (table[(current_index)].info == SI_TABLE_VALUE_IS_EMPTY) {
+		table[(current_index)].info = SI_TABLE_VALUE_IS_MEASURED;
+		table_entries++;
+	}
+	if (table_entries >= SI_PREDICTION_THRESHOLD)
+		prediction();
+	/* Reply OSCALL Value to MCU
+	 * ToDo: Recalibration Process*/
+	res_buffer->osccal = req_buffer->osccal;
+	/* DEBUG ONLY*/
+	SI_REPLY_DEBUG_TABLE_ENTRY();
+}
+
+/*
+ * No Checksum Error occurred
+ *
+ * If the temperature decreased by at least 2 degrees, increase the voltage.
+ *
+ * If a table entry exists, use that voltage.
+ *
+ * If no table value has been used for SI_ADAPTION_INTERVAL iterations,
+ * decrease voltage level by ~15mV (increase vreg by 1).
+ */
+void si_main_no_error(void)
+{
+	uint8_t temp_diff = this_temperature - prv_temperature;
+	if (temp_diff <= -2) {
+		current_voltage -= 5;
+		prv_temperature = this_temperature;
+	} else if (temp_diff >= 2) {
+		prv_temperature = this_temperature;
+	}
+
+	if ((table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY)) {
+		current_voltage = table[(current_index)].voltage;
+		res_buffer->osccal = table[(current_index)].osccal;
+		SI_REPLY_DEBUG_TABLE_USED(table[(current_index)].info);
+		iteration = 0;
+	} else if (++iteration > SI_ADAPTION_INTERVAL) {
+		current_voltage += 1;
+		/* If absolute min. voltage level is reached => table entry*/
+		if (current_voltage >= 254) {
+			table[(current_index)].voltage = current_voltage;
+			table[(current_index)].osccal = req_buffer->osccal;
+			if (table[(current_index)].info
+					== SI_TABLE_VALUE_IS_EMPTY) {
+				table[(current_index)].info =
+						SI_TABLE_VALUE_IS_MEASURED;
+			}
+			SI_REPLY_DEBUG_TABLE_ENTRY();
+			current_voltage = 254;
+		}
+		iteration = 0;
+	}
+}
+
+/*
+ * Main State: Controlled Undervolting takes place here
+ */
+void si_main(void)
+{
+	/* Recalibration of OSCALL */
+	this_delta_t = TCNT1;
+	TCNT1 = 0;
+	res_buffer->dt = this_delta_t;
+
+	/* Get hashed table index:*/
+	current_index = ((uint8_t) (this_temperature) >> 1);
+	/* 1) Check if an Checksum error occurred*/
+	if (req_buffer->checksum != checksum) {
+		error = 1;
+		printf("%c:checksum", REPORT_ERROR);
+	}
+	if (req_buffer->rst_flags == MCU_SW_RESET) {
+		error = 1;
+		printf("%c:sw_reset", REPORT_ERROR);
+	}
+	/*Possible Temp-Readout error*/
+	if (((this_temperature + 10) <= prv_temperature)
+			|| (this_temperature >= (prv_temperature + 10))) {
+		error = 1;
+		current_index = ((uint8_t) (prv_temperature) >> 1);
+		printf("%c:temp_readout", REPORT_ERROR);
+	}
+
+	if (error)
+		si_main_error();
+	else
+		si_main_no_error();
+
+	/* Reply Frame:
+	 * New Voltage Level*/
+	res_buffer->voltage = current_voltage;
+
+	/*!
+	 * Hier muss nochmal die Rekalibrierung überdacht werden
+	*/
+	if (this_delta_t > (delta_t + SI_DELTA_T_MARGIN))
+		res_buffer->osccal = req_buffer->osccal + 1;
+	else if (this_delta_t < (delta_t - SI_DELTA_T_MARGIN))
+		res_buffer->osccal = req_buffer->osccal - 1;
+	else
+		res_buffer->osccal = req_buffer->osccal;
+	SI_UNLOCK();
+}
+
+void si_debug()
+{
+	/* Use 2 Bytes of the protocol frame 'rxbuffer' to enter (and communicate with) the debug state:
+	 * debug_rx_0 = mcu_rst_disable (forbidden: 0xFF => entry)
+	 *    7     6     5     4     3     2     1     0
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 * |          input data   |     output select     |
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 *
+	 * debug_rx_0 = mcu_rstFlags
+	 *    7     6     5     4     3     2     1     0
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 * |                  input data                   |
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 *
+	 *
+	 * Use 3 Bytes of the protocol frame 'txbuffer' to implement debug output:
+	 * debug_tx_0 = si_dt_l
+	 * debug_tx_1 = si_dt_h
+	 * debug_tx_2 = si_debug
+	 *    7     6     5     4     3     2     1     0
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 * |                  output data                  |
+	 * +-----+-----+-----+-----+-----+-----+-----+-----+
+	 */
+
+	/* SI is now in Debug mode: */
+	SI_REPLY_DEBUG_STATE(SI_DEBUG);
+	/* Stay in debug state until the main MCU will send the exit command */
+	while (req_buffer->rst_disable > SI_STAY_IN_DEBUG) {
+		/* Get table status of collected Temperatures: */
+		if ((req_buffer->rst_disable & 0x0F) == 2) {
+			/* get information if already predicted,
+			 *  how many points are manifested and the table size*/
+			res_buffer->dt = get_table_status()
+					| (SI_TABLE_SIZE << 8);
+			res_buffer->debug = v_offset;//get information about temp offset
+			req_buffer->rst_disable = 0xFF;
+		/* Get table entry */
+		} else if ((req_buffer->rst_disable & 0x0F) == 3) {
+			current_index = (int8_t)(req_buffer->rst_flags);
+			current_index += SI_TEMP_OFFSET;
+			current_index = (current_index >> 1);
+			res_buffer->dt = table[(current_index)].voltage
+					| (table[(current_index)].osccal << 8);
+			res_buffer->debug = table[(current_index)].info;
+			req_buffer->rst_disable = 0xFF;
+		/* Get error counters */
+		} else if ((req_buffer->rst_disable & 0x0F) == 4) {
+			res_buffer->dt = alu_errors | (rst_errors << 8);
+			req_buffer->rst_disable = 0xFF;
+		/* erase eeprom */
+		} else if ((req_buffer->rst_disable & 0x0F) == 5) {
+			eeprom_write_byte(0x0000, 'n'); //fast erase, just ignore eeprom data
+			req_buffer->rst_disable = 0xFF;
+		/* eeprom status*/
+		} else if ((req_buffer->rst_disable & 0x0F) == 6) {
+			res_buffer->dt = eeprom_read_byte(0x0000);
+			req_buffer->rst_disable = 0xFF;
+		/* set voltage offset */
+		} else if ((req_buffer->rst_disable & 0x0F) == 7) {
+			v_offset = (uint8_t)(req_buffer->rst_flags);
+			if (v_offset > 30) {
+				v_offset = 30; //error, invalid offset
+			}
+			if (eeprom_table_available) {
+				for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) { //update table
+					table[i].voltage -= v_offset;
+				}
+				eeprom_write_byte(EEPROM_ADDR_VOFF, v_offset);
+			}
+			req_buffer->rst_disable = 0xFF;
+		}
+	}
+	/* Reset overflow counter for external Watchdog*/
+	TCNT1 = 0;
+	count_overflows = 0;
+}
+
+/* Main routine
+ *
+ * ToDo: shut-down pin implememtieren,
+ * sodass die Programierfunktion nicht beeinträchtigt wird
  * Ist bare auch suboptimal, da nicht generisch genug */
-
-int main(void) {
+int main(void)
+{
 	state = SI_INIT;
 	while (1) {
 		switch (state) {
 
 		case SI_INIT:
-			//while(1){;}
-			/* Initialize SI core components*/
-			init_SI();
-			/* Alternating Byte is set to zero (init)*/
-			req_buffer->alt_byte = 0;
-			/* Switch to idle state.
-			 * When the first request frame arrives, next_state is transient state*/
+			si_init();
 			state = SI_IDLE;
 			next_state = SI_TRANSIENT;
 			break;
 
 		case SI_IDLE:
-			/* Check if alternating bytes has changed */
-			if (req_buffer->alt_byte != this_altbyte) {
-				/* Lock SI and copy current alternating byte */
-				*lock_buffer = SI_LOCK();
-				this_altbyte = req_buffer->alt_byte;
-				/* Reset watchdog*/
-				count_overflows = 0;
-				/* Readout OSCALL Value from man MCU.
-				 * Get Temperature and add offset due to negative values */
-				fact_default = req_buffer->osccal; //??
-				checksum = MCU_CHECK_RESULT_CORRECT; //validate(rxbuffer[mcu_temperature]);
-				this_temperature = (int8_t) (req_buffer->temperature);
-				this_temperature += SI_TEMP_OFFSET;
-				/* DEBUG ONLY:*/
-				SI_REPLY_DEBUG_RESET();
-				SI_REPLY_DEBUG_STATE(next_state);
-				/* Request Frame was received => switch to next_frame*/
-				error = 0;
-				state = next_state;
-			}
-			/* Only the main MCU initiates the enter of the debug state */
+			if (req_buffer->alt_byte != this_altbyte)
+				si_frame_received();
 			if (req_buffer->rst_disable == 0xFF) {
 				SI_REPLY_DEBUG_RESET();
 				state = SI_DEBUG;
@@ -222,158 +497,15 @@ int main(void) {
 			break;
 
 		case SI_TRANSIENT:
-			/* After startup the system is in transient state.
-			 * Controlled undervolting is delayed by some cycles */
-			if (startup > 0) {
-				startup--;
-#if USE_MEGA_CLOCK
-				delta_t = TCNT1;
-#else
-				delta_t = 16000;
-#endif
-				TCNT1 = 0;
-				SI_REPLY_DELTA_T(delta_t);
-			} else {
-				/* Backup default OSCALL value before controlled undervolting starts*/
-				fact_default = req_buffer->osccal;
-				prv_temperature = this_temperature;
-				next_state = SI_MAIN;
-			}
-			/* Reply of OSCALL and Voltage Level*/
-			res_buffer->osccal = req_buffer->osccal; //SI_REPLY_OSCCAL_FB(byte4); //nötig??
-			res_buffer->voltage = current_voltage;
-			/*If EEPROM data are available, the voltage potential 128->~200 is too heavy */
-			if((eeprom_table_available) || (table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY)) {
-				current_voltage += SI_STEP;
-				current_index = ((uint8_t) (this_temperature) >> 1);
-				if (current_voltage <= table[(current_index)].voltage) {
-					res_buffer->voltage = current_voltage;
-				} else {
-					res_buffer->voltage = table[(current_index)].voltage;
-					current_voltage = res_buffer->voltage;
-				}
-			}
-			/* If a reset occured, send this information to MCU*/
-			if (req_buffer->rst_flags == MCU_HW_RESET) {
-				SI_REPLY_DEBUG_RESET_HW();
-			} else if (req_buffer->rst_flags == MCU_SW_RESET) {
-				SI_REPLY_DEBUG_RESET_SW();
-			}
-			/* Unlock SI and get back to IDLE state*/
-			*lock_buffer = SI_UNLOCK();
+			si_transient();
+			send_report(REPORT_PERIODIC);
 			state = SI_IDLE;
 			break;
 
 		case SI_MAIN:
-			/* Main State: Controlled Undervolting takes place here*/
-			/* Recalibration of OSCALL */
-			this_delta_t = TCNT1;
-			TCNT1 = 0;
-			SI_REPLY_DELTA_T(this_delta_t);
-			
-			/* Get hashed table index:*/
-			current_index = ((uint8_t) (this_temperature) >> 1);
-			/* 1) Check if an Checksum error occurred*/
-			if (req_buffer->checksum != checksum) {
-				error = 1;
-			}			
-			if (req_buffer->rst_flags == MCU_SW_RESET) {
-				error = 1;
-			}			
-			/*Possible Temp-Readout error*/
-			if (((this_temperature + 10) <= prv_temperature) || (this_temperature >= (prv_temperature + 10))) {
-				error = 1;
-				current_index = ((uint8_t) (prv_temperature) >> 1);
-			}
-
-			if (error) {
-				/* Checksum Error:
-				 * Decreases poti-reg value which increases voltage level */
-				current_voltage -= SI_DEFAULT_VOLT_OFFSET; //
-				alu_errors++;
-				/* Supervised Learning:
-				 * Add/Update this idealVoltage level to the table*/
-				table[(current_index)].voltage = current_voltage;
-				table[(current_index)].osccal = req_buffer->osccal;
-				if (table[(current_index)].info == SI_TABLE_VALUE_IS_EMPTY) {
-					table[(current_index)].info = SI_TABLE_VALUE_IS_MEASURED;
-					table_entries++;
-				}
-				/* If enough idealVoltages are ascertained => predict*/
-				if (table_entries >= SI_PREDICTION_THRESHOLD) {
-					prediction();
-					/* decrease table_entries - any failure forces a new prediction */
-					table_entries--; //
-				}
-				/* Reply OSCALL Value to MCU
-				 * ToDo: Recalibration Process*/
-				res_buffer->osccal = req_buffer->osccal;
-				/* DEBUG ONLY*/
-				SI_REPLY_DEBUG_TABLE_ENTRY();
-
-			} else {
-				/* ToDo: Nicht optimal => sollte in einzelne Funktionen gepackt werden*/
-				/* No Checksum Error occurred */
-				/* Temperature change > +/- 2°C ?*/
-				if (((this_temperature + 2) <= prv_temperature) || (this_temperature >= (prv_temperature + 2))) {
-					/* Check if table entry exists for this temperature */
-					if (table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY) { //Does an entry for this temperature exist?
-						current_voltage = table[(current_index)].voltage;
-						SI_REPLY_OSCCAL_FB(table[(current_index)].osccal);
-						SI_REPLY_DEBUG_TABLE_USED( table[(current_index)].info);
-						/* Jump over the iterative ascertaining process*/
-						iteration = 0;
-					} else if (this_temperature < prv_temperature) {
-						/* If no entry exist and Temperature drops by 2°C => increase voltage level*/
-						current_voltage -= 5;
-					}
-					/* Copy this_temperature to compare next value*/
-					prv_temperature = this_temperature;
-				} else if ((table[(current_index)].info	!= SI_TABLE_VALUE_IS_EMPTY)) {
-					/* If the temperature is constant, check if table entries are available */
-					current_voltage = table[(current_index)].voltage;
-					SI_REPLY_OSCCAL_FB(table[(current_index)].osccal);
-					SI_REPLY_DEBUG_TABLE_USED(table[(current_index)].info);
-					/* Jump over the iterative ascertaining process*/
-					iteration = 0;
-				}
-				/* Iterative ascertaining of idealVoltage Levels:
-				 * Decrease Voltage Level*/
-				if (++iteration > SI_ADAPTION_INTERVAL) {
-					/* Increase poti-reg by 1 to increase voltage level by ~15mV*/
-					current_voltage += 1;
-					if (current_voltage >= 254) {
-						/* If absolute min. voltage level is reached => table entry*/
-						table[(current_index)].voltage = current_voltage; //updating table entry
-						table[(current_index)].osccal = req_buffer->osccal;
-						if (table[(current_index)].info
-								== SI_TABLE_VALUE_IS_EMPTY) {
-							table[(current_index)].info =
-									SI_TABLE_VALUE_IS_MEASURED;
-						}
-						SI_REPLY_DEBUG_TABLE_ENTRY();
-						current_voltage = 254;
-					}
-					iteration = 0;
-				}
-			}
-			/* Reply Frame:
-			 * New Voltage Level*/
-			printf("vreg=%d\n", current_voltage);
-			res_buffer->voltage = current_voltage;
-			/*!
-			 * Hier muss nochmal die Rekalibrierung überdachzt werden
-			*/
-
-			if (this_delta_t > (delta_t + SI_DELTA_T_MARGIN)) {
-				res_buffer->osccal = req_buffer->osccal + 1;
-			} else if (this_delta_t < (delta_t - SI_DELTA_T_MARGIN)) {
-				res_buffer->osccal = req_buffer->osccal - 1;
-			} else {
-				res_buffer->osccal = req_buffer->osccal;
-			}
+			si_main();
+			send_report(REPORT_PERIODIC);
 			state = SI_IDLE;
-			*lock_buffer = SI_UNLOCK();
 			break;
 
 		case SI_RESET:
@@ -381,230 +513,173 @@ int main(void) {
 			break;
 
 		case SI_DEBUG:
-			/* Use 2 Bytes of the protocol frame 'rxbuffer' to enter (and communicate with) the debug state:
-			 * debug_rx_0 = mcu_rst_disable (forbidden: 0xFF => entry)
-			 *    7     6     5     4     3     2     1     0
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 * |          input data   |     output select     |
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 *
-			 * debug_rx_0 = mcu_rstFlags
-			 *    7     6     5     4     3     2     1     0
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 * |                  input data                   |
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 *
-			 *
-			 * Use 3 Bytes of the protocol frame 'txbuffer' to implement debug output:
-			 * debug_tx_0 = si_dt_l
-			 * debug_tx_1 = si_dt_h
-			 * debug_tx_2 = si_debug
-			 *    7     6     5     4     3     2     1     0
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 * |                  output data                  |
-			 * +-----+-----+-----+-----+-----+-----+-----+-----+
-			 */
-
-			/* SI is now in Debug mode: */
-			SI_REPLY_DEBUG_STATE(SI_DEBUG);
-			/* Stay in debug state until the main MCU will send the exit command */
-			while (req_buffer->rst_disable > SI_STAY_IN_DEBUG) {
-				/* Get table status of collected Temperatures: */
-				if ((req_buffer->rst_disable & 0x0F) == 2) {
-					res_buffer->dt_l = get_table_status(); //get information if already predicted and how many points are manifested
-					res_buffer->dt_h = SI_TABLE_SIZE;      //get information about table size
-					res_buffer->debug = v_offset;	        //get information about temp offset
-					req_buffer->rst_disable = 0xFF;
-				/* Get table entry */
-				} else if ((req_buffer->rst_disable & 0x0F) == 3) {
-					current_index = (int8_t)(req_buffer->rst_flags);
-					current_index += SI_TEMP_OFFSET;
-					current_index = (current_index >> 1);
-					res_buffer->dt_l = table[(current_index)].voltage;
-					res_buffer->dt_h = table[(current_index)].osccal;
-					res_buffer->debug = table[(current_index)].info;
-					req_buffer->rst_disable = 0xFF;
-				/* Get error counters */
-				} else if ((req_buffer->rst_disable & 0x0F) == 4) {
-					res_buffer->dt_l = alu_errors;
-					res_buffer->dt_h = rst_errors;
-					req_buffer->rst_disable = 0xFF;
-				/* erase eeprom */
-				} else if ((req_buffer->rst_disable & 0x0F) == 5) {
-					eeprom_write_byte(0x0000, 'n'); //fast erase, just ignore eeprom data
-					req_buffer->rst_disable = 0xFF;
-				/* eeprom status*/
-				} else if ((req_buffer->rst_disable & 0x0F) == 6) {
-					res_buffer->dt_l = eeprom_read_byte(0x0000);
-					req_buffer->rst_disable = 0xFF;
-				/* set voltage offset */
-				} else if ((req_buffer->rst_disable & 0x0F) == 7) {
-					v_offset = (uint8_t)(req_buffer->rst_flags);
-					if (v_offset > 30) {
-						v_offset = 30; //error, invalid offset
-					}
-					if (eeprom_table_available) {
-						for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) { //update table
-							table[i].voltage -= v_offset;
-						}
-						eeprom_write_byte(0x0001, v_offset);
-					}
-					req_buffer->rst_disable = 0xFF;
-				}
-			}
+			si_debug();
 			state = SI_IDLE;
 			next_state = SI_TRANSIENT;
-			/* Reset overflow counter for external Watchdog*/
-			TCNT1 = 0;
-			count_overflows = 0;
 			break;
 		}
 	}
 }
 
-
-
-void init_SI() {
-	cli();
-	sw_uart_init();
-	*lock_buffer = SI_LOCK();
-	/* Initialize the Reset Pin for main MCU HW-reset*/
-	SI_INIT_RESET_LINE();
-	/* Reset Voltage to normal level when SI is reset*/
-	SI_PULL_RESET_LINE();
-	_delay_ms(100);
-	reset_voltage_level(); //secure instance as master
-	_delay_ms(100);
-	/* I2C Slave Initialization */
-	i2c_slave_init(SLAVE_ADDR_ATTINY);
-	SI_RELEASE_RESET_LINE();
-	/* Timer Initialization, Settings:
-	 * Prescaler 8, Overflow Interrupt every ~0.5s, (maybe prsc32 would be better?)
-	 */
-	TCCR1A = 0b00000000;
-	TCCR1B = 0b00000011;
-	TIMSK1 |= (1 << TOIE1);
-	TCNT1 = 0;
-	/* Enable external Watchdog*/ //ToDo!!
-	req_buffer->rst_disable = 0x00;
-	/* # of iterations with transient phase*/
-	startup = SI_STARTUP_DELAY;
-	/* */
-	iteration = 0;
-	/* Startup voltage level*/
-	current_voltage = SI_VOLT_REG_OFFSET;
-	/* Initialize Table for supervised Learning */	
-	if (eeprom_read_byte(0x0000) == 'y') { //if the curve is already available
+void init_table(void)
+{
+	if (eeprom_read_byte(0x0000) == 'y') {
 		for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) {
-			eeprom_read_block(&table[i], (i*3)+ SI_TABLE_EEPROM_START_ADDR, 3); //3 because sizeof(table_entry)
+			void *entry_ptr = EEPROM_ADDR_TABLE
+					+ (i * sizeof(struct table_entry));
+			eeprom_read_block(&table[i], entry_ptr, 3);
 		}
 		eeprom_table_available = 1;
-		/* Get offset value */
-		v_offset = eeprom_read_byte(0x0001);
-		for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) {
+		v_offset = eeprom_read_byte(EEPROM_ADDR_VOFF);
+		for (uint8_t i = 0; i < SI_TABLE_SIZE; i++)
 			table[i].voltage -= v_offset;
-		}
-	} else {					//if not,
+	} else {
 		for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) {
 			table[i].voltage = SI_TABLE_VALUE_IS_EMPTY;
 			table[i].info = SI_TABLE_VALUE_IS_EMPTY;
 		}
 	}
-	sei();
-	*lock_buffer = SI_UNLOCK();
 }
 
-void reset_voltage_level(void) {
-	/* ToDO: den I2C Master aufräumen */
-	/* */
-	char mi2c_tx_buffer[3] = {AD5242_DEV_ADDR_W,  //Write Slave Address
-				  AD5242_CHN_A,       //Internal address
-				  SI_VOLT_REG_RESET}; //SI_VOLT_REG_OFFSET; //todo Value to write
-	/* Use I2C master to reset digital potentiometer */
+/*
+ * Use I2C master to reset digital potentiometer
+ *
+ * ToDO: den I2C Master aufräumen
+ * todo Value to write
+ */
+void reset_voltage_level(void)
+{
+	char mi2c_tx_buffer[3] = {
+			AD5242_DEV_ADDR_W, //Write Slave Address
+			AD5242_CHN_A,      //Internal address
+			SI_VOLT_REG_RESET  //SI_VOLT_REG_OFFSET;
+	};
 	current_voltage = SI_VOLT_REG_RESET;
 	i2c_master_transmit(mi2c_tx_buffer, sizeof(mi2c_tx_buffer));
 }
 
-void prediction(void) {
+void prediction_fill_table(
+		double m_volt, double b_volt,
+		double m_osc, double b_osc)
+{
 	uint8_t index;
-	double sum_xy, sum_x, sum_x2, sum_y, n, m_volt, b_volt, m_osc, b_osc;
+	for (index = 0; index < SI_TABLE_SIZE; index++) {
+		if (table[index].info != SI_TABLE_VALUE_IS_MEASURED) {
+			table[index].voltage =
+					round(m_volt * (double) index + b_volt);
+			table[index].osccal =
+					round(m_osc * (double) index + b_osc);
+			table[index].info = SI_TABLE_VALUE_IS_PREDICTED;
+		}
+	}
+}
 
-	/* runaways? */
-	n = 0;
-	sum_x = 0.0;
-	sum_y = 0.0;
-	sum_xy = 0.0;
-	sum_x2 = 0.0;
+uint8_t prediction_analyze_table(
+		double *m_volt, double *b_volt,
+		double *m_osc, double *b_osc)
+{
+	uint8_t n = 0;
+	uint8_t index;
+	double sum_xy = 0.0,
+	       sum_x  = 0.0,
+	       sum_x2 = 0.0,
+	       sum_y  = 0.0;
+
 	for (index = 0; index < SI_TABLE_SIZE; index++) {
 		if (table[index].info == SI_TABLE_VALUE_IS_MEASURED) {
 			n++;
 			sum_x += (double) index;
 			sum_x2 += (double) index * (double) index;
 			sum_y += (double) table[index].voltage;
-			sum_xy += (double) index * (double) table[index].voltage;
+			sum_xy += (double) index
+					* (double) table[index].voltage;
 		}
 	}
-	m_volt = (sum_xy - ((sum_x * sum_y) / n)) / (sum_x2 - ((sum_x * sum_x) / n));
-	b_volt = (sum_y / n) - (sum_x / n) * m_volt;
+	*m_volt = (sum_xy - ((sum_x * sum_y) / n))
+			/ (sum_x2 - ((sum_x * sum_x) / n));
+	*b_volt = (sum_y / n) - (sum_x / n) * *m_volt;
 
 	sum_y = 0.0;
 	sum_xy = 0.0;
 	for (index = 0; index < SI_TABLE_SIZE; index++) {
 		if (table[index].info == SI_TABLE_VALUE_IS_MEASURED) {
 			sum_y += (double) table[index].osccal;
-			sum_xy += (double) index * (double) table[index].osccal;
+			sum_xy += (double) index
+					* (double) table[index].osccal;
 		}
 	}
-	m_osc = (sum_xy - ((sum_x * sum_y) / n)) / (sum_x2 - ((sum_x * sum_x) / n));
-	b_osc = (sum_y / n) - (sum_x / n) * m_osc;
+	*m_osc = (sum_xy - ((sum_x * sum_y) / n))
+			/ (sum_x2 - ((sum_x * sum_x) / n));
+	*b_osc = (sum_y / n) - (sum_x / n) * *m_osc;
+	return n;
+}
 
+void prediction(void)
+{
+	uint8_t n;
+	double m_volt, b_volt, m_osc, b_osc;
+
+	/* decrease table_entries - any failure forces a new prediction */
+	table_entries--;
+
+	/* runaways? */
+	n = prediction_analyze_table(&m_volt, &b_volt, &m_osc, &b_osc);
 	if (n >= SI_PREDICTION_THRESHOLD) {
-		for (index = 0; index < SI_TABLE_SIZE; index++) {
-			if (table[index].info != SI_TABLE_VALUE_IS_MEASURED) {
-				table[index].voltage = round(m_volt * (double) index + b_volt);
-				table[index].osccal = round(m_osc * (double) index + b_osc);
-				table[index].info = SI_TABLE_VALUE_IS_PREDICTED;
-			}
-		}
+		prediction_fill_table(m_volt, b_volt, m_osc, b_osc);
 		SI_REPLY_DEBUG_TABLE_USED(SI_TABLE_PREDICTION);
 	} else {
 		table_entries = (uint8_t) n;
 	}
-	/*Write characteristic curve to eeprom*/
+
+	/* Write characteristic curve to eeprom */
 	for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) {
-		eeprom_write_block(&table[i], (i*3)+ SI_TABLE_EEPROM_START_ADDR, 3);
+		void *entry_ptr = EEPROM_ADDR_TABLE
+				+ (i * sizeof(struct table_entry));
+		eeprom_write_block(&table[i], entry_ptr, 3);
 	}
-	eeprom_write_byte(0x0000, 'y'); //write 'y' to the first addr of the eeprom to indicate that the cc already exists
-	eeprom_write_byte(0x0001, 0);   //write initial voltage offset
+
+	/* Write 'y' to the first addr of the eeprom
+	   to indicate that the cc already exists
+	   and write the initial voltage offset */
+	eeprom_write_byte(EEPROM_ADDR_AVAIL, 'y');
+	eeprom_write_byte(EEPROM_ADDR_VOFF, 0);
 }
 
-uint8_t get_table_status(void){
-	/* Table Status Byte:
-	 *
-	 *    7     6     5     4     3     2     1     0
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 * |prdc?|            # of table entries           |
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 */
+/*
+ *  Table Status Byte:
+ *
+ *    7     6     5     4     3     2     1     0
+ * +-----+-----+-----+-----+-----+-----+-----+-----+
+ * |prdc?|            # of table entries           |
+ * +-----+-----+-----+-----+-----+-----+-----+-----+
+ */
+uint8_t get_table_status(void)
+{
 	uint8_t index, m, p;
 	m = 0;
 	p = 0;
 	for (index = 0; index < SI_TABLE_SIZE; index++) {
-		if (table[index].info == SI_TABLE_VALUE_IS_MEASURED) {
+		if (table[index].info == SI_TABLE_VALUE_IS_MEASURED)
 			m++;
-		}
-		if (table[index].info == SI_TABLE_VALUE_IS_PREDICTED) {
+		else if (table[index].info == SI_TABLE_VALUE_IS_PREDICTED)
 			p++;
-		}
 	}
-	if (p > 0) {
+	if (p > 0)
 		m |= (1 << 7);
-	}
 	return m;
 }
 
+void send_report(char report_type)
+{
+	printf("%c:v=%u,t=%d,n=%u\n",
+			report_type,
+			current_voltage,
+			this_temperature - SI_TEMP_OFFSET,
+			table_entries);
+}
 
-ISR(TIM1_OVF_vect) {
+ISR(TIM1_OVF_vect)
+{
 	/* Counter for HW-Reset */
 	count_overflows++;
 	TCNT1 = 0;	
@@ -612,14 +687,14 @@ ISR(TIM1_OVF_vect) {
 	/* External Watchdog: Reset if > DEADLOCK_THRESHOLD*/
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (req_buffer->rst_disable == 0x01)) {
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (state != SI_DEBUG)){	
-	if ((state != SI_DEBUG)){	
-	rst_errors++;
+	if ((state != SI_DEBUG)) {
+		rst_errors++;
 		/* If the watchdog is triggered => reset main MCU */
 		cli();
 		SI_PULL_RESET_LINE();
 		
 		/* Only store values to the table when we are not in transient mode */			
-		if(next_state != SI_TRANSIENT){
+		if (next_state != SI_TRANSIENT) {
 			current_index = ((uint8_t) (this_temperature) >> 1);//get hashed index of the table
 			current_voltage -= SI_DEFAULT_VOLT_OFFSET;
 			table[(current_index)].voltage = current_voltage; //updating table entry
@@ -628,18 +703,17 @@ ISR(TIM1_OVF_vect) {
 			table_entries++;
 			SI_REPLY_DEBUG_TABLE_ENTRY();
 			/* Prediction Process:*/
-			if (table_entries >= SI_PREDICTION_THRESHOLD) { //make prediction
+			if (table_entries >= SI_PREDICTION_THRESHOLD)
 				prediction();
-				table_entries--; //decrease value by 1. If now any failure occur, we predict again
-			}
 		}
 		_delay_ms(300);
 		reset_voltage_level(); //secure instance as master
-		i2c_slave_init(SLAVE_ADDR_ATTINY);	// secure instance as slave
+		//Implementation uses different address notation
+		i2c_slave_init(SI_I2C_ADDR << 1); // secure instance as slave
 
 		_delay_ms(300);
 		/* The reset is stored as a failure event => table entry*/
-		*lock_buffer = SI_LOCK();
+		SI_LOCK();
 		SI_RELEASE_RESET_LINE();
 
 		/* Reset state machine */
@@ -648,13 +722,13 @@ ISR(TIM1_OVF_vect) {
 		next_state = SI_TRANSIENT;
 		SI_REPLY_DEBUG_RESET();
 		res_buffer->osccal = fact_default;
-		SI_REPLY_VOLTAGE(SI_VOLT_REG_RESET);
+		res_buffer->voltage = SI_VOLT_REG_RESET;
 		//ToDo: default voltage
 		count_overflows = 0;
 		/* Reset alternating byte */
 		sei();	 
 		this_altbyte = 0;
-		*lock_buffer = SI_UNLOCK();
+		SI_UNLOCK();
 	}
 }
 

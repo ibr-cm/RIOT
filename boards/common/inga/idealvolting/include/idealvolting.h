@@ -46,7 +46,7 @@
 		"        table = %d\n" \
 		"        flags = %s%s%s\n", \
 		(res)->osccal, (res)->voltage, \
-		(res)->dt_l | ((res)->dt_h << 8), \
+		(res)->dt, \
 		(res)->debug & (3), \
 		((res)->debug >> 6) & (3), \
 		(res)->debug & (1 << 3) ? "TABLE_ENTRY ": "", \
