@@ -96,8 +96,6 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(IV_I2C_DEV);
 	assert(res->osccal >= IV_OSCCAL_MIN && res->osccal <= IV_OSCCAL_MAX);
-	DEBUG_PRINT_REQ(req);
-	DEBUG_PRINT_RES(res);
 }
 
 void prepare_si_req(iv_req_t *req) {
