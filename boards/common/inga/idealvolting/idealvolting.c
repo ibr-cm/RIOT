@@ -43,9 +43,8 @@ static struct {
 	uint8_t osccal;
 	uint8_t temp;
 	uint8_t table;
-	uint8_t swr_happened;
 } iv_state;
-static uint8_t swr_detection = 0;
+uint8_t swr_detection = 0;
 
 int8_t get_temp(void)
 {
@@ -65,8 +64,6 @@ uint8_t check_reset(void)
 		MCUSR &= 0b11111101;
 		return 1;
 	} else if (swr_detection) { //SW Reset
-		iv_state.swr_happened = 1;
-		swr_detection = 1;
 		return 2;
 	}
 	return 0;
@@ -102,7 +99,6 @@ void prepare_si_req(iv_req_t *req) {
 	req->checksum = MCU_CHECK();
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
-	req->rst_flags = check_reset();
 	req->osccal = OSCCAL;
 	req->alt_byte ^= 1;
 }
@@ -118,6 +114,8 @@ void *iv_thread(void *arg)
 
 	mutex_lock(&iv_mutex);
 	req.alt_byte = 0;
+	req.rst_flags = check_reset();
+	swr_detection = 1;
 	req.rst_disable = 0x00;
 	ad5242_init(&ad5242_dev, &ad5242_params);
 	wait_si_ready();
@@ -131,6 +129,7 @@ void *iv_thread(void *arg)
 		mutex_unlock(&iv_disable);
 		prepare_si_req(&req);
 		send_si_req(&req, &res);
+		req.rst_flags = 0x00;
 		iv_state.vreg = res.voltage;
 		iv_state.osccal = res.osccal;
 		iv_state.table = (res.debug >> 6) & (3);
@@ -146,7 +145,6 @@ void idealvolting_init(void)
 {
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
-	iv_state.swr_happened = 0;
 
 	i2c_acquire(IV_I2C_DEV);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
@@ -191,7 +189,5 @@ void idealvolting_print_status(void)
 	printf("OSCCAL      = %d\n", iv_state.osccal);
 	printf("Temperature = %d\n", iv_state.temp);
 	printf("Table used  = %s\n", iv_state.table ? "true" : "false");
-	if (iv_state.swr_happened)
-		puts("THERE HAS BEEN A SOFTWARE RESET!");
 	mutex_unlock(&iv_mutex);
 }
