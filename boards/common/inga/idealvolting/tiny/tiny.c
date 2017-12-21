@@ -133,8 +133,10 @@ struct table_entry {
 #define DT_TARGET_SRC 16000;
 #endif
 
+#define REPORT_HELLO                        'h'
 #define REPORT_PERIODIC                     'p'
 #define REPORT_ERROR                        'e'
+#define REPORT_DEBUG                        'd'
 
 static iv_req_t *req_buffer = (iv_req_t *) rxbuffer;
 static uint8_t *lock_buffer = (uint8_t *) txbuffer;
@@ -157,6 +159,7 @@ static uint8_t v_offset = 0;
 /* Debug counter */
 static uint8_t alu_errors = 0;
 static uint8_t rst_errors = 0;
+static uint8_t sent_hello = 0;
 
 ///For deadlock reset
 volatile uint8_t count_overflows = 0;
@@ -234,6 +237,16 @@ void si_frame_received(void)
 	state = next_state;
 }
 
+void approach_voltage(uint8_t value)
+{
+	if (value - current_voltage > SI_STEP)
+		current_voltage += SI_STEP;
+	else if (value - current_voltage < -SI_STEP)
+		current_voltage -= SI_STEP;
+	else
+		current_voltage = value;
+}
+
 void si_transient(void)
 {
 	/* After startup the system is in transient state.
@@ -253,17 +266,11 @@ void si_transient(void)
 	res_buffer->osccal = req_buffer->osccal;
 	res_buffer->voltage = current_voltage;
 	/*If EEPROM data are available, the voltage potential 128->~200 is too heavy */
-	uint8_t entry_is_empty =
+	current_index = ((uint8_t) (this_temperature) >> 1);
+	uint8_t entry_not_empty =
 			table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY;
-	if(eeprom_table_available || entry_is_empty) {
-		current_voltage += SI_STEP;
-		current_index = ((uint8_t) (this_temperature) >> 1);
-		if (current_voltage <= table[(current_index)].voltage) {
-			res_buffer->voltage = current_voltage;
-		} else {
-			res_buffer->voltage = table[(current_index)].voltage;
-			current_voltage = res_buffer->voltage;
-		}
+	if(eeprom_table_available || entry_not_empty) {
+		approach_voltage(table[(current_index)].voltage);
 	}
 	/* If a reset occured, send this information to MCU*/
 	if (req_buffer->rst_flags == MCU_HW_RESET) {
@@ -319,7 +326,7 @@ void si_main_no_error(void)
 	}
 
 	if ((table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY)) {
-		current_voltage = table[(current_index)].voltage;
+		approach_voltage(table[(current_index)].voltage);
 		res_buffer->osccal = table[(current_index)].osccal;
 		SI_REPLY_DEBUG_TABLE_USED(table[(current_index)].info);
 		iteration = 0;
@@ -356,18 +363,18 @@ void si_main(void)
 	/* 1) Check if an Checksum error occurred*/
 	if (req_buffer->checksum != checksum) {
 		error = 1;
-		printf("%c:checksum", REPORT_ERROR);
+		printf("%c:checksum\n", REPORT_ERROR);
 	}
 	if (req_buffer->rst_flags == MCU_SW_RESET) {
 		error = 1;
-		printf("%c:sw_reset", REPORT_ERROR);
+		printf("%c:sw_reset\n", REPORT_ERROR);
 	}
 	/*Possible Temp-Readout error*/
 	if (((this_temperature + 10) <= prv_temperature)
 			|| (this_temperature >= (prv_temperature + 10))) {
 		error = 1;
 		current_index = ((uint8_t) (prv_temperature) >> 1);
-		printf("%c:temp_readout", REPORT_ERROR);
+		printf("%c:temp_readout\n", REPORT_ERROR);
 	}
 
 	if (error)
@@ -498,7 +505,12 @@ int main(void)
 
 		case SI_TRANSIENT:
 			si_transient();
-			send_report(REPORT_PERIODIC);
+			if (sent_hello) {
+				send_report(REPORT_PERIODIC);
+			} else {
+				printf("%c:hello\n", REPORT_HELLO);
+				sent_hello = 1;
+			}
 			state = SI_IDLE;
 			break;
 
@@ -682,12 +694,13 @@ ISR(TIM1_OVF_vect)
 {
 	/* Counter for HW-Reset */
 	count_overflows++;
-	TCNT1 = 0;	
+	TCNT1 = 0;
 
 	/* External Watchdog: Reset if > DEADLOCK_THRESHOLD*/
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (req_buffer->rst_disable == 0x01)) {
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (state != SI_DEBUG)){	
 	if ((state != SI_DEBUG)) {
+		printf("%c:timeout\n", REPORT_ERROR);
 		rst_errors++;
 		/* If the watchdog is triggered => reset main MCU */
 		cli();
