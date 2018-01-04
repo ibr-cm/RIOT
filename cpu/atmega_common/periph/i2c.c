@@ -133,6 +133,7 @@ int i2c_acquire(i2c_t dev)
         return -1;
     }
     mutex_lock(&lock);
+    i2c_poweron(dev);
     return 0;
 }
 
@@ -141,6 +142,7 @@ int i2c_release(i2c_t dev)
     if (!(dev < I2C_NUMOF)) {
         return -1;
     }
+    i2c_poweroff(dev);
     mutex_unlock(&lock);
     return 0;
 }
