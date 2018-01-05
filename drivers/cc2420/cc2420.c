@@ -191,8 +191,16 @@ int cc2420_rx(cc2420_t *dev, uint8_t *buf, size_t max_len, void *info)
 
         /* fetch and check if CRC_OK bit (MSB) is set */
         cc2420_fifo_read(dev, &crc_corr, 1);
-        if (!(crc_corr & 0x80) && (len > CC2420_PKT_MAXLEN)) {
-            len = CC2420_PKT_MAXLEN;
+        if (!(crc_corr & 0x80)) {
+#if 0
+            DEBUG("cc2420: recv: CRC_OK bit not set, dropping packet\n");
+            /* drop the corrupted frame from the RXFIFO */
+            len = 0;
+#else
+            if(len > CC2420_PKT_MAXLEN) {
+                len = CC2420_PKT_MAXLEN;
+            }
+#endif
         }
 
         if (info != NULL) {
