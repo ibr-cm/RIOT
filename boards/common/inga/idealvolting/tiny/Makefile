@@ -89,6 +89,9 @@ clean:
 erase-eeprom:
 	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:eeprom-empty.r:r
 
+erase-eeprom:
+	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:eeprom-empty.r:r
+
 upload-tiny:${NAME_TINY}
 	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U flash:w:${NAME_TINY}.hex:i
 
