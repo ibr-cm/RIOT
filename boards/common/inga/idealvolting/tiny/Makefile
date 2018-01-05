@@ -86,6 +86,9 @@ clean:
 	rm -f ${NAME_TINY}
 	rm -f idle.o idle.hex idle
 
+erase-eeprom:
+	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:eeprom-empty.r:r
+
 upload-tiny:${NAME_TINY}
 	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U flash:w:${NAME_TINY}.hex:i
 
