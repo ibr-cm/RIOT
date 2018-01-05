@@ -26,6 +26,8 @@
 #include "xtimer.h"
 #include "thread.h"
 #include "periph/i2c.h"
+#include "periph/rtt.h"
+#include "msg.h"
 #include <stdio.h>
 #include <assert.h>
 #include <mutex.h>
@@ -33,8 +35,9 @@
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
 
+static kernel_pid_t iv_thread_pid;
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
-static mutex_t iv_mutex, iv_disable;
+static mutex_t iv_mutex;
 static struct {
 	uint8_t is_running;
 	uint8_t debug;
@@ -43,7 +46,7 @@ static struct {
 	uint8_t temp;
 	uint8_t table;
 } iv_state;
-uint8_t swr_detection = 0;
+static uint8_t swr_detection = 0;
 
 uint8_t check_reset(void)
 {
@@ -95,7 +98,9 @@ void prepare_si_req(iv_req_t *req) {
 void *iv_thread(void *arg)
 {
 	(void) arg;
+	
 	static vscale_t vscale_dev;
+	msg_t msg;
 	iv_req_t req;
 	iv_res_t res;
 
@@ -112,12 +117,9 @@ void *iv_thread(void *arg)
 	wait_si_ready();
 	mutex_unlock(&iv_mutex);
 
-	xtimer_ticks32_t last_wakeup = xtimer_now();
 	while (1) {
-		xtimer_periodic_wakeup(&last_wakeup, 1000000);
+		msg_receive(&msg);
 		mutex_lock(&iv_mutex);
-		mutex_lock(&iv_disable);
-		mutex_unlock(&iv_disable);
 		prepare_si_req(&req);
 		send_si_req(&req, &res);
 		req.rst_flags = 0x00;
@@ -140,13 +142,15 @@ void idealvolting_init(void)
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
 
-	i2c_acquire(IV_I2C_DEV);
+	mutex_init(&iv_mutex);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
-	i2c_release(IV_I2C_DEV);
+	rtt_init();
 
-	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
+	iv_thread_pid = thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
 			iv_thread, NULL, "idealvolting");
+
+	rtt_set_alarm(1, cb, NULL);
 
 	iv_state.is_running = 1;
 }
@@ -154,7 +158,6 @@ void idealvolting_init(void)
 void idealvolting_enable(void)
 {
 	mutex_lock(&iv_mutex);
-	mutex_unlock(&iv_disable);
 	iv_state.is_running = 1;
 	mutex_unlock(&iv_mutex);
 }
@@ -162,7 +165,6 @@ void idealvolting_enable(void)
 void idealvolting_disable(void)
 {
 	mutex_lock(&iv_mutex);
-	mutex_unlock(&iv_disable);
 	iv_state.is_running = 0;
 	mutex_unlock(&iv_mutex);
 }
