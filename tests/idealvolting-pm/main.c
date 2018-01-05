@@ -35,12 +35,11 @@ int main(void)
 {
 	volatile double l = 0.0;
 	(void) l;
-	uart_poweroff(UART_STDIO_DEV);
+	//uart_poweroff(UART_STDIO_DEV);
 	while (1) {
 		uint8_t b = pm_blocker[3];
 		//uart_poweron(UART_STDIO_DEV);
 		printf("%d\n", b);
-		idealvolting_print_status();
 		DELAY(4);
 		//uart_poweroff(UART_STDIO_DEV);
 		DELAY(2);
