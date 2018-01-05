@@ -34,6 +34,7 @@
 
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
+#define TICKS_TO_WAIT (1 * RTT_FREQUENCY)
 
 static kernel_pid_t iv_thread_pid;
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
@@ -47,6 +48,7 @@ static struct {
 	uint8_t table;
 } iv_state;
 static uint8_t swr_detection = 0;
+static volatile uint32_t last;
 
 uint8_t check_reset(void)
 {
@@ -150,7 +152,7 @@ void idealvolting_init(void)
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
 			iv_thread, NULL, "idealvolting");
 
-	rtt_set_alarm(1, cb, NULL);
+	rtt_set_alarm(TICKS_TO_WAIT, cb, NULL);
 
 	iv_state.is_running = 1;
 }
