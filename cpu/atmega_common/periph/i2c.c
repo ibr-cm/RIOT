@@ -110,7 +110,7 @@ int i2c_init_master(i2c_t dev, i2c_speed_t speed)
     I2C_PORT_REG |= (I2C_PIN_MASK);
 
     /* enable I2C clock */
-    i2c_poweron(dev);
+    //i2c_poweron(dev);
 
     /* disable device */
     TWCR &= ~(1 << TWEN);

@@ -27,8 +27,10 @@ int ad5242_init(ad5242_t *dev, const ad5242_params_t *params)
 	dev->addr = params->addr;
 	assert((dev->addr & 0x7c) == 0x2c);
 	dev->opt = params->opt;
+	if(i2c_init_master(dev->i2c, params->i2c_spd) != 0)
+		return -1;
 	i2c_acquire(dev->i2c);
-	if(i2c_init_master(dev->i2c, params->i2c_spd) != 0 || i2c_write_byte(dev->i2c, dev->addr, dev->opt) != 1) {
+	if(i2c_write_byte(dev->i2c, dev->addr, dev->opt) != 1) {
 		i2c_release(dev->i2c);
 		return -1;
 	}
