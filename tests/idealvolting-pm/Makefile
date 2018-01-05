@@ -1,6 +1,6 @@
 include ../Makefile.tests_common
 
-USEMODULE += idealvolting periph_rtt
+USEMODULE += idealvolting
 
 CFLAGS += -DDEVELHELP
 
