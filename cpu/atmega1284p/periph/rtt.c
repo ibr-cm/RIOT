@@ -85,7 +85,7 @@ void rtt_clear_alarm(void) {
 
 void rtt_poweron(void) {
 #ifdef MODULE_PM_LAYERED
-    pm_block(PM_SLEEPMODE_INVALID_TIMER2);
+    pm_block(PM_INVALID_TIMER2);
 #endif
     power_timer2_enable();
 }
@@ -93,7 +93,7 @@ void rtt_poweron(void) {
 void rtt_poweroff(void) {
     power_timer2_disable();
 #ifdef MODULE_PM_LAYERED
-    pm_unblock(PM_SLEEPMODE_INVALID_TIMER2);
+    pm_unblock(PM_INVALID_TIMER2);
 #endif
 }
 
