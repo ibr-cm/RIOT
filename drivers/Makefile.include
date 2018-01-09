@@ -256,3 +256,6 @@ endif
 ifneq (, $(filter ad5242,$(USEMODULE)))
   USEMODULE_INCLUDES += $(RIOTBASE)/drivers/ad5242/include
 endif
+ifneq (, $(filter max541x,$(USEMODULE)))
+  USEMODULE_INCLUDES += $(RIOTBASE)/drivers/max541x/include
+endif
