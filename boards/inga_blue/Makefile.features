@@ -1,1 +1,3 @@
+FEATURES_PROVIDED += ad5242
+
 include $(RIOTBOARD)/common/inga/Makefile.features
