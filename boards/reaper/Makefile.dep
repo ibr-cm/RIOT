@@ -1,0 +1,10 @@
+include $(RIOTBOARD)/common/inga/Makefile.dep
+
+ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
+  USEMODULE += at86rf233
+endif
+
+ifneq (,$(filter idealvolting,$(USEMODULE)))
+  USEMODULE += max541x
+  USEMODULE += xtimer
+endif
