@@ -22,8 +22,6 @@
 #include "idealvolting_config.h"
 #include "idealvolting_frame.h"
 #include "alu_check.h"
-#include "ad5242.h"
-#include "ad5242_params.h"
 #include "xtimer.h"
 #include "thread.h"
 #include "periph/i2c.h"
@@ -107,17 +105,17 @@ void *iv_thread(void *arg)
 {
 	(void) arg;
 
-	mutex_init(&iv_mutex);
-	static ad5242_t ad5242_dev;
+	static vscale_t vscale_dev;
 	iv_req_t req;
 	iv_res_t res;
 
+	mutex_init(&iv_mutex);
 	mutex_lock(&iv_mutex);
 	req.alt_byte = 0;
 	req.rst_flags = check_reset();
 	swr_detection = 1;
 	req.rst_disable = 0x00;
-	ad5242_init(&ad5242_dev, &ad5242_params);
+	VSCALE_INIT(&vscale_dev);
 	wait_si_ready();
 	mutex_unlock(&iv_mutex);
 
@@ -133,7 +131,7 @@ void *iv_thread(void *arg)
 		iv_state.vreg = res.voltage;
 		iv_state.osccal = res.osccal;
 		iv_state.table = (res.debug >> 6) & (3);
-		ad5242_set_reg(&ad5242_dev, res.voltage);
+		VSCALE_SET_REG(&vscale_dev, res.voltage);
 		OSCCAL = res.osccal;
 		mutex_unlock(&iv_mutex);
 	}
@@ -146,9 +144,12 @@ void idealvolting_init(void)
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
 
-	i2c_acquire(IV_I2C_DEV);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
-	i2c_release(IV_I2C_DEV);
+
+	for (uint8_t i = 5; i != 0xFF; --i) {
+		xtimer_sleep(1);
+		printf("%d\n", i);
+	}
 
 	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
