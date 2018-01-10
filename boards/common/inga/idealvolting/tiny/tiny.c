@@ -79,7 +79,7 @@ struct table_entry {
 
 #define SI_STARTUP_DELAY                    7
 #define SI_VOLT_REG_OFFSET                  130//128///200// für 4mhz200
-#define SI_VOLT_REG_RESET                   140
+#define SI_VOLT_REG_RESET                   0//140
 #define SI_DEFAULT_VOLT_OFFSET              4
 #define MATRIX_SIZE                         4
 #define SI_ADAPTION_INTERVAL                5
@@ -121,9 +121,17 @@ struct table_entry {
 
 ///Deadlock Reset
 #define DEADLOCK_THRESHOLD                  3 //overflows corresponds to a deadlock situation
+
 ///Digital Potentiometer Reset Software i2c
-#define AD5242_DEV_ADDR_W                   0x58
-#define AD5242_CHN_A                        0x00
+#if defined BOARD_INGA_BLUE
+#define VREG_DEV_ADDR_W                     0x58
+#define VREG_OP                             0x00
+#elif defined BOARD_REAPER
+#define VREG_DEV_ADDR_W                     0x54
+#define VREG_OP                             0x11
+#else
+#error Define either BOARD_INGA_BLUE or BOARD_REAPER
+#endif
 
 #define SI_STEP                             10
 
@@ -169,7 +177,7 @@ struct table_entry table[SI_TABLE_SIZE];
 
 /* FUNCTION DECLARARTIONS */
 void init_table(void);
-void reset_voltage_level(void);
+uint8_t reset_voltage_level(void);
 void prediction(void);
 uint8_t get_table_status(void);
 void erase_eeprom(void);
@@ -183,15 +191,25 @@ void si_init(void)
 	cli();
 	SI_LOCK();
 
+#ifdef BOARD_REAPER
+	DDRA &=~(1<<PA2);   // VBAT_OK input test
+	DDRA |= (1<<PA1);   // Enable i2c level shifter
+	DDRA |= (1<<PA3);   // VOUT_EN buck enable test
+	PORTA |= (1<<PA1);  // Enable i2c level shifter
+	PORTA |= (1<<PA3);  // Enable buck
+#endif
+
 	/* Reset Voltage to normal level when SI is reset */
 	SI_INIT_RESET_LINE();
 	SI_PULL_RESET_LINE();
 	_delay_ms(100);
-	reset_voltage_level();
+	uint8_t rvl_success = reset_voltage_level() == 0;
 	_delay_ms(100);
 	SI_RELEASE_RESET_LINE();
 
 	sw_uart_init();
+	_delay_ms(1000);
+	printf("rvl_success = %d\n", rvl_success);
 	/* This I2C implementation uses a different address notation */
 	i2c_slave_init(SI_I2C_ADDR << 1);
 
@@ -559,15 +577,15 @@ void init_table(void)
  * ToDO: den I2C Master aufräumen
  * todo Value to write
  */
-void reset_voltage_level(void)
+uint8_t reset_voltage_level(void)
 {
 	char mi2c_tx_buffer[3] = {
-			AD5242_DEV_ADDR_W, //Write Slave Address
-			AD5242_CHN_A,      //Internal address
+			VREG_DEV_ADDR_W,   //Write Slave Address
+			VREG_OP,           //Internal address
 			SI_VOLT_REG_RESET  //SI_VOLT_REG_OFFSET;
 	};
 	current_voltage = SI_VOLT_REG_RESET;
-	i2c_master_transmit(mi2c_tx_buffer, sizeof(mi2c_tx_buffer));
+	return i2c_master_transmit(mi2c_tx_buffer, sizeof(mi2c_tx_buffer)) - 1;
 }
 
 void prediction_fill_table(
