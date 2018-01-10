@@ -45,6 +45,10 @@ REMOVEDEADCODE_TINY=${REMOVEDEADCODE}
 CCFLAGS_TINY=${OPTIMIZE_TINY} -mmcu=${CPU_TINY} ${REMOVEDEADCODE_TINY} -ggdb -Isrc/ -std=c99 -DF_CPU=${CLOCK_TINY} -Wall
 LIBS_TINY=
 
+# if you want to publish the board into the sources as an uppercase #define
+BOARDDEF := $(shell echo $(BOARD) | tr 'a-z' 'A-Z' | tr '-' '_')
+CCFLAGS_TINY += -DBOARD_$(BOARDDEF)=\"$(BOARD)\"
+
 all:${NAME_TINY}
 	${SIZE} ${NAME_TINY}
 

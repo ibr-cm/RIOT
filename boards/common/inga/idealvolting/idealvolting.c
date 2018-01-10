@@ -46,11 +46,14 @@ uint8_t swr_detection = 0;
 
 int8_t get_temp(void)
 {
+	/*
 	uint8_t data;
 	i2c_acquire(IV_I2C_DEV);
 	i2c_read_reg(IV_I2C_DEV, TMP_ADDR, TMP_REG, &data);
 	i2c_release(IV_I2C_DEV);
 	return data;
+	*/
+	return 21;
 }
 
 uint8_t check_reset(void)
@@ -71,6 +74,7 @@ void wait_si_ready(void)
 {
 	uint8_t si_state;
 	do {
+		puts("waiting for si");
 		i2c_acquire(IV_I2C_DEV);
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
@@ -90,7 +94,6 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 	i2c_read_regs(IV_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(IV_I2C_DEV);
-	assert(res->osccal >= IV_OSCCAL_MIN && res->osccal <= IV_OSCCAL_MAX);
 }
 
 void prepare_si_req(iv_req_t *req) {
@@ -119,6 +122,8 @@ void *iv_thread(void *arg)
 	wait_si_ready();
 	mutex_unlock(&iv_mutex);
 
+	puts("iv setup complete");
+
 	xtimer_ticks32_t last_wakeup = xtimer_now();
 	while (1) {
 		xtimer_periodic_wakeup(&last_wakeup, 1000000);
@@ -132,7 +137,10 @@ void *iv_thread(void *arg)
 		iv_state.osccal = res.osccal;
 		iv_state.table = (res.debug >> 6) & (3);
 		VSCALE_SET_REG(&vscale_dev, res.voltage);
+#ifdef BOARD_INGA_BLUE
+		assert(res.osccal >= IV_OSCCAL_MIN && res.osccal <= IV_OSCCAL_MAX);
 		OSCCAL = res.osccal;
+#endif
 		mutex_unlock(&iv_mutex);
 	}
 
@@ -145,11 +153,6 @@ void idealvolting_init(void)
 	iv_state.debug = 0;
 
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
-
-	for (uint8_t i = 5; i != 0xFF; --i) {
-		xtimer_sleep(1);
-		printf("%d\n", i);
-	}
 
 	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,

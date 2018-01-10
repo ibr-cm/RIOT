@@ -23,13 +23,13 @@
 #ifndef IDEALVOLTING_CONFIG_H
 #define IDEALVOLTING_CONFIG_H
 
-#if defined BOARD_INGA_BLUE
+#if defined BOARD_INGA_BLUE && defined RIOT_BOARD
 #include "ad5242.h"
 #include "ad5242_params.h"
 #define vscale_t              ad5242_t
 #define VSCALE_INIT(x)        ad5242_init(x, &ad5242_params)
 #define VSCALE_SET_REG(x, y)  ad5242_set_reg(x, y)
-#elif defined BOARD_REAPER
+#elif defined BOARD_REAPER && defined RIOT_BOARD
 #include "max541x.h"
 #include "max541x_params.h"
 #define vscale_t              max541x_t
