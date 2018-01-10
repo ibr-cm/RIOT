@@ -74,7 +74,6 @@ void wait_si_ready(void)
 {
 	uint8_t si_state;
 	do {
-		puts("waiting for si");
 		i2c_acquire(IV_I2C_DEV);
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
