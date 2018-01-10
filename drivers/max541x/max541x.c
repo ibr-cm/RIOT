@@ -40,6 +40,5 @@ int max541x_set_reg(max541x_t *dev, uint8_t value)
 	i2c_acquire(dev->i2c);
 	res = i2c_write_reg(dev->i2c, dev->addr, MAX541X_VREG, value);
 	i2c_release(dev->i2c);
-	printf("dev=%u, addr=0x%x, op=0x%x, val=%u, res=%u\n", dev->i2c, dev->addr, MAX541X_VREG, value, res);
-	return res - 2;
+	return res - 1;
 }
