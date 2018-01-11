@@ -84,12 +84,21 @@ clean:
 	rm -f ${OBJECTS_TINY}
 	rm -f ${NAME_TINY}.hex
 	rm -f ${NAME_TINY}
+	rm -f idle.o idle.hex idle
 
 upload-tiny:${NAME_TINY}
 	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U flash:w:${NAME_TINY}.hex:i
 
 fuses-tiny:
 #todo
+
+idle: sw_uart.o
+	${CPP} ${CCFLAGS_TINY} idle.c -c -o idle.o
+	${CPP} ${CCFLAGS_TINY} idle.o sw_uart.o -o idle
+	${OBJCOPY} -O ihex idle idle.hex
+
+upload-idle: idle
+	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U flash:w:idle.hex:i
 
 upload:upload-tiny
 
