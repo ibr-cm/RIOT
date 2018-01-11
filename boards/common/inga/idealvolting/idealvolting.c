@@ -140,7 +140,9 @@ void idealvolting_init(void)
 	iv_state.is_running = 0;
 	iv_state.debug = 0;
 
+	i2c_acquire(IV_I2C_DEV);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+	i2c_release(IV_I2C_DEV);
 
 	thread_create(iv_thread_stack, sizeof(iv_thread_stack),
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
