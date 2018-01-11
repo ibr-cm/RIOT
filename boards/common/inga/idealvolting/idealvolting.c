@@ -23,7 +23,6 @@
 #include "idealvolting_frame.h"
 #include "alu_check.h"
 #include "temp.h"
-#include "xtimer.h"
 #include "thread.h"
 #include "periph/i2c.h"
 #include "periph/rtt.h"
@@ -50,6 +49,20 @@ static struct {
 static uint8_t swr_detection = 0;
 static volatile uint32_t last;
 
+void cb(void *arg)
+{
+	(void) arg;
+
+	last += TICKS_TO_WAIT;
+	last &= RTT_MAX_VALUE;
+	rtt_set_alarm(last, cb, NULL);
+
+	msg_t msg;
+	msg.type = 0;
+	msg.content.value = 0;
+	msg_send(&msg, iv_thread_pid);
+}
+
 uint8_t check_reset(void)
 {
 	if (MCUSR & 0b00000001) { //Power On
@@ -72,7 +85,7 @@ void wait_si_ready(void)
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
 		i2c_release(IV_I2C_DEV);
-		xtimer_usleep(100);
+		// Todo: Wait before trying again?
 	} while (si_state != SI_READY);
 }
 
@@ -129,10 +142,6 @@ void *iv_thread(void *arg)
 		iv_state.osccal = res.osccal;
 		iv_state.table = (res.debug >> 6) & (3);
 		VSCALE_SET_REG(&vscale_dev, res.voltage);
-#ifdef BOARD_INGA_BLUE
-		assert(res.osccal >= IV_OSCCAL_MIN && res.osccal <= IV_OSCCAL_MAX);
-		OSCCAL = res.osccal;
-#endif
 		mutex_unlock(&iv_mutex);
 	}
 
@@ -152,6 +161,7 @@ void idealvolting_init(void)
 			IV_THREAD_PRIORITY, IV_THREAD_FLAGS,
 			iv_thread, NULL, "idealvolting");
 
+	last = TICKS_TO_WAIT;
 	rtt_set_alarm(TICKS_TO_WAIT, cb, NULL);
 
 	iv_state.is_running = 1;
