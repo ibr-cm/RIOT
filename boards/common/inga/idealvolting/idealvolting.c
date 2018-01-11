@@ -95,13 +95,12 @@ void prepare_si_req(iv_req_t *req) {
 void *iv_thread(void *arg)
 {
 	(void) arg;
-
-	xtimer_sleep(3);
-	setup_temp();
-
 	static vscale_t vscale_dev;
 	iv_req_t req;
 	iv_res_t res;
+
+
+	setup_temp();
 
 	mutex_init(&iv_mutex);
 	mutex_lock(&iv_mutex);
