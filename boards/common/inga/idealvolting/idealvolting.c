@@ -22,6 +22,7 @@
 #include "idealvolting_config.h"
 #include "idealvolting_frame.h"
 #include "alu_check.h"
+#include "temp.h"
 #include "xtimer.h"
 #include "thread.h"
 #include "periph/i2c.h"
@@ -43,18 +44,6 @@ static struct {
 	uint8_t table;
 } iv_state;
 uint8_t swr_detection = 0;
-
-int8_t get_temp(void)
-{
-	/*
-	uint8_t data;
-	i2c_acquire(IV_I2C_DEV);
-	i2c_read_reg(IV_I2C_DEV, TMP_ADDR, TMP_REG, &data);
-	i2c_release(IV_I2C_DEV);
-	return data;
-	*/
-	return 21;
-}
 
 uint8_t check_reset(void)
 {
@@ -107,6 +96,9 @@ void *iv_thread(void *arg)
 {
 	(void) arg;
 
+	xtimer_sleep(3);
+	setup_temp();
+
 	static vscale_t vscale_dev;
 	iv_req_t req;
 	iv_res_t res;
@@ -120,8 +112,6 @@ void *iv_thread(void *arg)
 	VSCALE_INIT(&vscale_dev);
 	wait_si_ready();
 	mutex_unlock(&iv_mutex);
-
-	puts("iv setup complete");
 
 	xtimer_ticks32_t last_wakeup = xtimer_now();
 	while (1) {
