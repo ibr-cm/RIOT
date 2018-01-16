@@ -41,110 +41,17 @@
  */
 
  /* Includes */
+#include "tiny.h"
 #include <util/delay.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>
 #include <avr/eeprom.h>
 #include <avr/io.h>
-#include "drv/adc-drv.h"
 #include "math.h"
-#include "sw_uart.h"
-#include "../include/idealvolting_config.h"
-#include "../include/idealvolting_frame.h"
-
-#include "i2c-master.h"
-#include "i2c-slave.h"
-
-/* Definitions */
-struct table_entry {
-	uint8_t voltage;
-	uint8_t osccal;
-	uint8_t info;
-};
-
-#ifndef F_CPU
-#define F_CPU 1000000UL
-#endif
-
-#define SI_INIT                             0
-#define SI_TRANSIENT                        1
-#define SI_MAIN                             2
-#define SI_IDLE                             3
-#define SI_RESET                            4
-#define SI_DEBUG                            5
-
-#define SI_STARTUP_DELAY                    7
-#define SI_VOLT_REG_OFFSET                  130//128///200// für 4mhz200
-#define SI_VOLT_REG_RESET                   140
-#define SI_DEFAULT_VOLT_OFFSET              4
-#define MATRIX_SIZE                         4
-#define SI_ADAPTION_INTERVAL                5
-#define SI_DELTA_T_MARGIN                   25
-#define SI_TEMP_OFFSET                      25
-
-#define SI_PREDICTION_THRESHOLD             7
-#define SI_TABLE_SIZE                       51
-#define SI_TABLE_VALUE_IS_EMPTY             0xFF
-#define SI_TABLE_VALUE_IS_MEASURED          0x01
-#define SI_TABLE_VALUE_IS_PREDICTED         0x02
-#define SI_TABLE_PREDICTION                 0x03
-
-#define EEPROM_ADDR_AVAIL                   ((void *) 0x00)
-#define EEPROM_ADDR_VOFF                    ((void *) 0x01)
-#define EEPROM_ADDR_TABLE                   ((void *) 0x02)
-
-#define SI_PWR_MONITOR_ICC_ADC              ADC_CHANNEL_1
-#define SI_PWR_MONITOR_VCC_ADC              ADC_CHANNEL_0
-
-#define SI_LOCK()                           *lock_buffer = 0
-#define SI_UNLOCK()                         *lock_buffer = 1
-#define SI_BOOTING()                        *lock_buffer = 2
-
-#define SI_REPLY_DEBUG_RESET()              res_buffer->debug = 0x00
-#define SI_REPLY_DEBUG_STATE(current_state) res_buffer->debug |= current_state
-#define SI_REPLY_DEBUG_TABLE_ENTRY()        res_buffer->debug |= (1 << 3)
-#define SI_REPLY_DEBUG_RESET_HW()           res_buffer->debug |= (1 << 4)
-#define SI_REPLY_DEBUG_RESET_SW()           res_buffer->debug |= (1 << 5)
-#define SI_REPLY_DEBUG_TABLE_USED(info)     res_buffer->debug |= (info << 6)
-
-#define SI_STAY_IN_DEBUG                    1
-
-#define SI_INIT_RESET_LINE()                DDRA |= (1<<PA7)    //0b00000100 set PB2 to Output
-#define SI_PULL_RESET_LINE()                PORTA |= (1<<PA7)   //0b00000100 set PB2 to 1
-#define SI_RELEASE_RESET_LINE()             PORTA &= ~(1<<PA7)  // set PB2 to 0
-#define MCU_HW_RESET                        0x01
-#define MCU_SW_RESET                        0x02
-
-///Deadlock Reset
-#define DEADLOCK_THRESHOLD                  3 //overflows corresponds to a deadlock situation
-
-///Digital Potentiometer Reset Software i2c
-#if defined BOARD_INGA_BLUE
-#define VREG_DEV_ADDR_W                     0x58
-#define VREG_OP                             0x00
-#elif defined BOARD_REAPER
-#define VREG_DEV_ADDR_W                     0x54
-#define VREG_OP                             0x11
-#else
-#error Define either BOARD_INGA_BLUE or BOARD_REAPER
-#endif
-
-#define SI_STEP                             10
-
-#if USE_MEGA_CLOCK
-#define DT_TARGET_SRC TCNT1;
-#else
-#define DT_TARGET_SRC 16000;
-#endif
-
-#define REPORT_HELLO                        'h'
-#define REPORT_PERIODIC                     'p'
-#define REPORT_ERROR                        'e'
-#define REPORT_DEBUG                        'd'
+#include "drv/adc-drv.h"
+#include "drv/sw_uart.h"
 
 static iv_req_t *req_buffer = (iv_req_t *) rxbuffer;
 static uint8_t *lock_buffer = (uint8_t *) txbuffer;
@@ -176,12 +83,6 @@ static uint8_t fact_default;
 struct table_entry table[SI_TABLE_SIZE];
 
 /* FUNCTION DECLARARTIONS */
-void init_table(void);
-uint8_t reset_voltage_level(void);
-void prediction(void);
-uint8_t get_table_status(void);
-void erase_eeprom(void);
-void send_report(char report_type);
 
 /*
  * Reset voltage, set initial values, initialize timers, start UART and i2c
@@ -280,9 +181,6 @@ void si_transient(void)
 		prv_temperature = this_temperature;
 		next_state = SI_MAIN;
 	}
-	/* Reply of OSCALL and Voltage Level*/
-	res_buffer->osccal = req_buffer->osccal;
-	res_buffer->voltage = current_voltage;
 	/*If EEPROM data are available, the voltage potential 128->~200 is too heavy */
 	current_index = ((uint8_t) (this_temperature) >> 1);
 	uint8_t entry_not_empty =
@@ -290,6 +188,9 @@ void si_transient(void)
 	if(eeprom_table_available || entry_not_empty) {
 		approach_voltage(table[(current_index)].voltage);
 	}
+	/* Reply of OSCALL and Voltage Level*/
+	res_buffer->osccal = req_buffer->osccal;
+	res_buffer->voltage = current_voltage;
 	/* If a reset occured, send this information to MCU*/
 	if (req_buffer->rst_flags == MCU_HW_RESET) {
 		SI_REPLY_DEBUG_RESET_HW();
@@ -416,85 +317,6 @@ void si_main(void)
 	SI_UNLOCK();
 }
 
-void si_debug()
-{
-	/* Use 2 Bytes of the protocol frame 'rxbuffer' to enter (and communicate with) the debug state:
-	 * debug_rx_0 = mcu_rst_disable (forbidden: 0xFF => entry)
-	 *    7     6     5     4     3     2     1     0
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 * |          input data   |     output select     |
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 *
-	 * debug_rx_0 = mcu_rstFlags
-	 *    7     6     5     4     3     2     1     0
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 * |                  input data                   |
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 *
-	 *
-	 * Use 3 Bytes of the protocol frame 'txbuffer' to implement debug output:
-	 * debug_tx_0 = si_dt_l
-	 * debug_tx_1 = si_dt_h
-	 * debug_tx_2 = si_debug
-	 *    7     6     5     4     3     2     1     0
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 * |                  output data                  |
-	 * +-----+-----+-----+-----+-----+-----+-----+-----+
-	 */
-
-	/* SI is now in Debug mode: */
-	SI_REPLY_DEBUG_STATE(SI_DEBUG);
-	/* Stay in debug state until the main MCU will send the exit command */
-	while (req_buffer->rst_disable > SI_STAY_IN_DEBUG) {
-		/* Get table status of collected Temperatures: */
-		if ((req_buffer->rst_disable & 0x0F) == 2) {
-			/* get information if already predicted,
-			 *  how many points are manifested and the table size*/
-			res_buffer->dt = get_table_status()
-					| (SI_TABLE_SIZE << 8);
-			res_buffer->debug = v_offset;//get information about temp offset
-			req_buffer->rst_disable = 0xFF;
-		/* Get table entry */
-		} else if ((req_buffer->rst_disable & 0x0F) == 3) {
-			current_index = (int8_t)(req_buffer->rst_flags);
-			current_index += SI_TEMP_OFFSET;
-			current_index = (current_index >> 1);
-			res_buffer->dt = table[(current_index)].voltage
-					| (table[(current_index)].osccal << 8);
-			res_buffer->debug = table[(current_index)].info;
-			req_buffer->rst_disable = 0xFF;
-		/* Get error counters */
-		} else if ((req_buffer->rst_disable & 0x0F) == 4) {
-			res_buffer->dt = alu_errors | (rst_errors << 8);
-			req_buffer->rst_disable = 0xFF;
-		/* erase eeprom */
-		} else if ((req_buffer->rst_disable & 0x0F) == 5) {
-			eeprom_write_byte(0x0000, 'n'); //fast erase, just ignore eeprom data
-			req_buffer->rst_disable = 0xFF;
-		/* eeprom status*/
-		} else if ((req_buffer->rst_disable & 0x0F) == 6) {
-			res_buffer->dt = eeprom_read_byte(0x0000);
-			req_buffer->rst_disable = 0xFF;
-		/* set voltage offset */
-		} else if ((req_buffer->rst_disable & 0x0F) == 7) {
-			v_offset = (uint8_t)(req_buffer->rst_flags);
-			if (v_offset > 30) {
-				v_offset = 30; //error, invalid offset
-			}
-			if (eeprom_table_available) {
-				for (uint8_t i = 0; i < SI_TABLE_SIZE; i++) { //update table
-					table[i].voltage -= v_offset;
-				}
-				eeprom_write_byte(EEPROM_ADDR_VOFF, v_offset);
-			}
-			req_buffer->rst_disable = 0xFF;
-		}
-	}
-	/* Reset overflow counter for external Watchdog*/
-	TCNT1 = 0;
-	count_overflows = 0;
-}
-
 /* Main routine
  *
  * ToDo: shut-down pin implememtieren,
@@ -540,12 +362,6 @@ int main(void)
 
 		case SI_RESET:
 			/* wäre schöner, wenn es hier implementiert würde*/
-			break;
-
-		case SI_DEBUG:
-			si_debug();
-			state = SI_IDLE;
-			next_state = SI_TRANSIENT;
 			break;
 		}
 	}
@@ -724,8 +540,9 @@ ISR(TIM1_OVF_vect)
 		cli();
 		SI_PULL_RESET_LINE();
 		
-		/* Only store values to the table when we are not in transient mode */			
-		if (next_state != SI_TRANSIENT) {
+		/* Only store values to the table when we are not in transient mode
+		   and the timeout does not happen immediately after another error */
+		if (next_state != SI_TRANSIENT && error == 0) {
 			current_index = ((uint8_t) (this_temperature) >> 1);//get hashed index of the table
 			current_voltage -= SI_DEFAULT_VOLT_OFFSET;
 			table[(current_index)].voltage = current_voltage; //updating table entry
@@ -762,4 +579,3 @@ ISR(TIM1_OVF_vect)
 		SI_UNLOCK();
 	}
 }
-

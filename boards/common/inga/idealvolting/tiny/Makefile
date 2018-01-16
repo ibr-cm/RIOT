@@ -18,17 +18,17 @@ DEBUG = 0
 EMPTY=
 
 SOURCES_TINY= \
-              i2c-master.c \
-              i2c-slave.c \
+              drv/i2c-master.c \
+              drv/i2c-slave.c \
               tiny.c \
-              sw_uart.c \
+              drv/sw_uart.c \
               ${EMPTY}
 
 HEADERS_TINY= \
-              i2c-master.h \
-              i2c-slave.h \
-              usi.h \
-              sw_uart.h \
+              drv/i2c-master.h \
+              drv/i2c-slave.h \
+              drv/usi.h \
+              drv/sw_uart.h \
               ../include/idealvolting_config.h \
               ../include/idealvolting_frame.h \
               ${EMPTY}
@@ -87,10 +87,7 @@ clean:
 	rm -f idle.o idle.hex idle
 
 erase-eeprom:
-	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:eeprom-empty.r:r
-
-erase-eeprom:
-	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:eeprom-empty.r:r
+	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U eeprom:w:res/eeprom-empty.r:r
 
 upload-tiny:${NAME_TINY}
 	${AVRDUDE} -c ${PROGRAMMER_TYPE_TINY} -P ${PROGRAMMER_PORT_TINY} -p ${CPU_TINY} -U flash:w:${NAME_TINY}.hex:i
@@ -98,9 +95,9 @@ upload-tiny:${NAME_TINY}
 fuses-tiny:
 #todo
 
-idle: sw_uart.o
+idle: drv/sw_uart.o
 	${CPP} ${CCFLAGS_TINY} idle.c -c -o idle.o
-	${CPP} ${CCFLAGS_TINY} idle.o sw_uart.o -o idle
+	${CPP} ${CCFLAGS_TINY} idle.o drv/sw_uart.o -o idle
 	${OBJCOPY} -O ihex idle idle.hex
 
 upload-idle: idle
