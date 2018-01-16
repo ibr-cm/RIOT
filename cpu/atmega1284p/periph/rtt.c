@@ -11,7 +11,6 @@ rtt_cb_t rtt_next_cb;
 volatile int cnt = 0;
 
 void rtt_init(void) {
-    printf("init rtt\n");
     rtt_poweron();
 
     /* Disable all interrupts */
