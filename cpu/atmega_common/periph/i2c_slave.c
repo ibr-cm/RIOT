@@ -1,48 +1,61 @@
+/**
+ * modified https://github.com/g4lvanix/I2C-slave-lib
+ */
+
 #include <avr/io.h>
 #include <util/twi.h>
 #include <avr/interrupt.h>
 
 #include "periph/i2c_slave.h"
 
-volatile uint8_t buffer_address;
-volatile uint8_t txbuffer[0xFF];
-volatile uint8_t rxbuffer[0xFF];
+uint8_t buffer_address, n_tx;
+uint8_t buffer[I2C_SLAVE_MAX_FRAME_SIZE];
+i2c_slave_rcb_t _rcb;
+i2c_slave_tcb_t _tcb;
 
-void i2c_init_slave(uint8_t address) {
+
+void i2c_init_slave(uint8_t address, i2c_slave_rcb_t rcb, i2c_slave_tcb_t tcb)
+{
+	_rcb = rcb;
+	_tcb = tcb;
 	// load address into TWI address register
 	TWAR = (address << 1);
 	// set the TWCR to enable address matching and enable TWI, clear TWINT, enable TWI interrupt
 	TWCR = (1<<TWIE) | (1<<TWEA) | (1<<TWINT) | (1<<TWEN);
 }
 
-void i2c_stop_slave(void) {
+void i2c_stop_slave(void)
+{
 	// clear acknowledge and enable bits
 	TWCR &= ~((1<<TWEA) | (1<<TWEN));
 }
 
-ISR(TWI_vect) {
+ISR(TWI_vect)
+{
 	// temporary stores the received data
 	uint8_t data;
 	// own address has been acknowledged
-	if ((TWSR & 0xF8) == TW_SR_SLA_ACK) {
-		buffer_address = 0xFF;
+	switch (TWSR & 0xF8) {
+	case TW_SR_SLA_ACK:
+		buffer_address = I2C_SLAVE_MAX_FRAME_SIZE;
 		// clear TWI interrupt flag, prepare to receive next byte and acknowledge
 		TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
-	} else if ((TWSR & 0xF8) == TW_SR_DATA_ACK) { // data has been received in slave receiver mode
+		break;
+	case TW_SR_DATA_ACK: // data has been received in slave receiver mode
 		// save the received byte inside data
 		data = TWDR;
 		// check wether an address has already been transmitted or not
-		if (buffer_address == 0xFF) {
+		if (buffer_address == I2C_SLAVE_MAX_FRAME_SIZE) {
 			buffer_address = data;
 			// clear TWI interrupt flag, prepare to receive next byte and acknowledge
 			TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
 		} else { // if a databyte has already been received
 			// store the data at the current address
-			rxbuffer[buffer_address] = data;
+			buffer[buffer_address] = data;
 			// increment the buffer address
 			buffer_address++;
 			// if there is still enough space inside the buffer
-			if (buffer_address < 0xFF) {
+			if (buffer_address < I2C_SLAVE_MAX_FRAME_SIZE) {
 				// clear TWI interrupt flag, prepare to receive next byte and acknowledge
 				TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
 			} else {
@@ -52,19 +65,21 @@ ISR(TWI_vect) {
 				TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEN);
 			}
 		}
-	} else if ((TWSR & 0xF8) == TW_ST_DATA_ACK) { // device has been addressed to be a transmitter
+		break;
+	case TW_ST_DATA_ACK: // device has been addressed to be a transmitter
 		// copy data from TWDR to the temporary memory
 		data = TWDR;
 		// if no buffer read address has been sent yet
-		if(buffer_address == 0xFF) {
-			buffer_address = data;
+		if(buffer_address == I2C_SLAVE_MAX_FRAME_SIZE) {
+			n_tx = _tcb(data, buffer);
+			buffer_address = 0;
 		}
 		// copy the specified buffer address into the TWDR register for transmission
-		TWDR = txbuffer[buffer_address];
+		TWDR = buffer[buffer_address];
 		// increment buffer read address
 		buffer_address++;
 		// if there is another buffer address that can be sent
-		if(buffer_address < 0xFF){
+		if (buffer_address < n_tx) {
 			// clear TWI interrupt flag, prepare to send next byte and receive acknowledge
 			TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
 		} else {
@@ -72,9 +87,15 @@ ISR(TWI_vect) {
 			TWCR &= ~(1<<TWEA);
 			// clear TWI interrupt flag, prepare to receive last byte.
 			TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEN);
+			buffer_address = I2C_SLAVE_MAX_FRAME_SIZE;
 		}
-
-	} else {
+		break;
+	case TW_SR_STOP: // finished receiving data
+		_rcb(3, buffer);
+		// prepare TWI to be addressed again
+		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
+		break;
+	default:
 		// if none of the above apply prepare TWI to be addressed again
 		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
 	}
