@@ -11,9 +11,10 @@ void rcb(uint8_t n_received, uint8_t *data_received)
 	puts("");
 }
 
-uint8_t tcb(uint8_t data_received, uint8_t *txbuffer)
+uint8_t tcb(uint8_t *txbuffer)
 {
-	printf("Data requested: 0x%02x\n", data_received);
+	puts("Data requested");
+	sprintf((char *) txbuffer, "xxxxxxx");
 	sprintf((char *) txbuffer, "ok");
 	return 3;
 }

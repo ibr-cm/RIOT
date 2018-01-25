@@ -18,14 +18,13 @@ DEBUG = 0
 EMPTY=
 
 SOURCES_TINY= \
-              drv/i2c-master.c \
+              drv/usi_i2c_master.c \
               main.c \
               drv/sw_uart.c \
               ${EMPTY}
 
 HEADERS_TINY= \
-              drv/i2c-master.h \
-              drv/usi.h \
+              drv/usi_i2c_master.h \
               drv/sw_uart.h \
               ${EMPTY}
 
