@@ -195,14 +195,14 @@ uint8_t _i2c_transfer_byte(uint8_t temp)
 		_delay_us(T2_TWI / 4);
 		USICR = temp;  // Generate positve SCL edge.
 		while(!(PIN_USI & (1 << PIN_USI_SCL)));  // Wait for SCL to go high.
-		_delay_us( T4_TWI/4 );
+		_delay_us( T4_TWI / 4 );
 		USICR = temp;  // Generate negative SCL edge.
 	} while (!(USISR & (1 << USIOIF)));  // Check for transfer complete.
 
 	_delay_us(T2_TWI / 4);
 	temp = USIDR;  // Read out data.
 	USIDR = 0xFF;  // Release SDA.
-	DDR_USI |= (1<<PIN_USI_SDA);  // Enable SDA as output.
+	DDR_USI |= (1 << PIN_USI_SDA);  // Enable SDA as output.
 
 	return temp;  // Return the data from the USIDR
 }
