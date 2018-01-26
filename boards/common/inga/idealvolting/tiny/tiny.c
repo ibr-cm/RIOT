@@ -111,8 +111,7 @@ void si_init(void)
 	sw_uart_init();
 	_delay_ms(1000);
 	printf("rvl_success = %d\n", rvl_success);
-	/* This I2C implementation uses a different address notation */
-	i2c_slave_init(SI_I2C_ADDR << 1);
+
 
 	/* Timer Initialization, Settings:
 	 * Prescaler 8, Overflow Interrupt every ~0.5s
@@ -133,6 +132,22 @@ void si_init(void)
 	sei();
 	req_buffer->alt_byte = 0;
 	SI_UNLOCK();
+}
+
+void si_master(void)
+{
+	cli();
+	i2c_init_master();
+	usi_twi_result_t result;
+	uint8_t data = 'w';
+	do {
+		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &data, 1);
+		printf("result = %u\n", result);
+		_delay_ms(1000);
+	} while (result != USI_TWI_SUCCESS);
+	/* This I2C implementation uses a different address notation */
+	i2c_slave_init(SI_I2C_ADDR << 1);
+	sei();
 }
 
 void si_frame_received(void)
@@ -330,8 +345,13 @@ int main(void)
 
 		case SI_INIT:
 			si_init();
-			state = SI_IDLE;
+			state = SI_MASTER;
 			next_state = SI_TRANSIENT;
+			break;
+
+		case SI_MASTER:
+			si_master();
+			state = SI_IDLE;
 			break;
 
 		case SI_IDLE:
@@ -395,13 +415,10 @@ void init_table(void)
  */
 uint8_t reset_voltage_level(void)
 {
-	char mi2c_tx_buffer[3] = {
-			VREG_DEV_ADDR_W,   //Write Slave Address
-			VREG_OP,           //Internal address
-			SI_VOLT_REG_RESET  //SI_VOLT_REG_OFFSET;
-	};
+	char txb[2] = {VREG_OP, SI_VOLT_REG_RESET};
 	current_voltage = SI_VOLT_REG_RESET;
-	return i2c_master_transmit(mi2c_tx_buffer, sizeof(mi2c_tx_buffer)) - 1;
+	i2c_init_master();
+	return i2c_write_bytes((VREG_DEV_ADDR_W >> 1), txb, sizeof(txb));
 }
 
 void prediction_fill_table(

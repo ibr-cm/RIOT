@@ -25,6 +25,7 @@
 #include "temp.h"
 #include "thread.h"
 #include "periph/i2c.h"
+#include "periph/i2c_slave.h"
 #include "periph/rtt.h"
 #include "msg.h"
 #include <stdio.h>
@@ -35,11 +36,18 @@
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
 #define TICKS_TO_WAIT (1 * RTT_FREQUENCY)
 
+enum {
+	IV_SLEEP_ACTIVE,
+	IV_SLEEP_SLEEPING,
+	IV_SLEEP_READY
+};
+
 static kernel_pid_t iv_thread_pid;
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
 static mutex_t iv_mutex;
 static struct {
 	uint8_t is_running;
+	uint8_t sleep;
 	uint8_t debug;
 	uint8_t vreg;
 	uint8_t osccal;
@@ -49,18 +57,35 @@ static struct {
 static uint8_t swr_detection = 0;
 static volatile uint32_t last;
 
-void cb(void *arg)
+void _rtt_cb(void *arg)
 {
 	(void) arg;
 
 	last += TICKS_TO_WAIT;
 	last &= RTT_MAX_VALUE;
-	rtt_set_alarm(last, cb, NULL);
+	rtt_set_alarm(last, _rtt_cb, NULL);
 
 	msg_t msg;
 	msg.type = 0;
 	msg.content.value = 0;
 	msg_send(&msg, iv_thread_pid);
+}
+
+void _i2c_r_cb(uint8_t n, uint8_t *data)
+{
+	puts("ACTIVATED!");
+	if (n == 1 && data[0] == 'w') {
+		msg_t msg;
+		msg.type = 0;
+		msg.content.value = 1;
+		msg_send(&msg, iv_thread_pid);
+	}
+}
+
+uint8_t _i2c_t_cb(uint8_t *data)
+{
+	(void) data;
+	return 0;
 }
 
 uint8_t check_reset(void)
@@ -102,12 +127,26 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 	i2c_release(IV_I2C_DEV);
 }
 
-void prepare_si_req(iv_req_t *req) {
+void prepare_si_req(iv_req_t *req)
+{
 	req->checksum = MCU_CHECK();
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
 	req->osccal = OSCCAL;
 	req->alt_byte ^= 1;
+}
+
+void _request_i2c_master(void)
+{
+	msg_t msg;
+	puts("Waiting to become i2c master");
+	i2c_init_slave(MEGA_SL_ADDR_READY, _i2c_r_cb, _i2c_t_cb);
+	do {
+		puts("still waiting...");
+		msg_receive(&msg);
+	} while (msg.content.value != 1);
+	i2c_stop_slave();
+	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
 }
 
 void *iv_thread(void *arg)
@@ -119,10 +158,10 @@ void *iv_thread(void *arg)
 	iv_req_t req;
 	iv_res_t res;
 
+	_request_i2c_master();
 
 	setup_temp();
 
-	mutex_init(&iv_mutex);
 	mutex_lock(&iv_mutex);
 	req.alt_byte = 0;
 	req.rst_flags = check_reset();
@@ -151,10 +190,10 @@ void *iv_thread(void *arg)
 void idealvolting_init(void)
 {
 	iv_state.is_running = 0;
+	iv_state.sleep = IV_SLEEP_READY;
 	iv_state.debug = 0;
 
 	mutex_init(&iv_mutex);
-	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
 	rtt_init();
 
 	iv_thread_pid = thread_create(iv_thread_stack, sizeof(iv_thread_stack),
@@ -162,7 +201,7 @@ void idealvolting_init(void)
 			iv_thread, NULL, "idealvolting");
 
 	last = TICKS_TO_WAIT;
-	rtt_set_alarm(TICKS_TO_WAIT, cb, NULL);
+	rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 
 	iv_state.is_running = 1;
 }
