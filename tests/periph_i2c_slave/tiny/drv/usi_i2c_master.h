@@ -18,28 +18,13 @@
 	#define T4_TWI    ((SYS_CLK *4000) / 1000000) + 1  // >4,0us
 #endif
 
-// Defines controling code generating
-//#define PARAM_VERIFICATION
-//#define NOISE_TESTING
-//#define SIGNAL_VERIFY
-
-//USI_TWI messages and flags and bit masks
-//#define SUCCESS   7
-//#define MSG       0
-
-#define TWI_READ_BIT  0  // Bit position for R/W bit in "address byte".
-#define TWI_ADR_BITS  1  // Bit position for LSB of the slave address bits in the init byte.
-#define TWI_NACK_BIT  0  // Bit position for (N)ACK bit.
-
-#define USI_TWI_NO_DATA             0x00  // Transmission buffer is empty
-#define USI_TWI_DATA_OUT_OF_BOUND   0x01  // Transmission buffer is outside SRAM space
-#define USI_TWI_UE_START_CON        0x02  // Unexpected Start Condition
-#define USI_TWI_UE_STOP_CON         0x03  // Unexpected Stop Condition
-#define USI_TWI_UE_DATA_COL         0x04  // Unexpected Data Collision (arbitration)
-#define USI_TWI_NO_ACK_ON_DATA      0x05  // The slave did not acknowledge  all data
-#define USI_TWI_NO_ACK_ON_ADDRESS   0x06  // The slave did not acknowledge  the address
-#define USI_TWI_MISSING_START_CON   0x07  // Generated Start Condition not detected on bus
-#define USI_TWI_MISSING_STOP_CON    0x08  // Generated Stop Condition not detected on bus
+enum USI_TWI_RESULT {
+	USI_TWI_SUCCESS = 0x00,            /* Transmission buffer is empty */
+	USI_TWI_NO_ACK_ON_DATA = 0x05,     /* The slave did not acknowledge all data */
+	USI_TWI_NO_ACK_ON_ADDRESS = 0x06,  /* The slave did not acknowledge the address */
+	USI_TWI_MISSING_START_CON = 0x07,  /* Generated Start Condition not detected on bus */
+	USI_TWI_MISSING_STOP_CON = 0x08    /* Generated Stop Condition not detected on bus */
+};
 
 #if defined(__AVR_AT90Mega169__) | defined(__AVR_ATmega169PA__) | \
 	defined(__AVR_AT90Mega165__) | defined(__AVR_ATmega165__) | \
@@ -90,4 +75,4 @@
 void i2c_init_master(void);
 uint8_t i2c_write_bytes(uint8_t addr, uint8_t *data, uint8_t len);
 uint8_t i2c_read_bytes(uint8_t addr, uint8_t *data, uint8_t len);
-uint8_t i2c_get_state_info(void);
+uint8_t i2c_read_regs(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len);
