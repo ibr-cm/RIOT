@@ -63,31 +63,13 @@ void idealvolting_init(void);
 
 /**
  * Enable Idealvolting
- *
- * If it was disabled, IdealVolting will be enabled and return to
- * the minimal voltage.
  */
-void idealvolting_enable(void);
+void idealvolting_wakeup(void);
 
 /**
  * Disable Idealvolting
- *
- * This should raise the voltage to the initial value and disable
- * resets on the Tiny.
- * Currently this will only pause the idealvolting thread, and the
- * Tiny will reset the node.
  */
-void idealvolting_disable(void);
-
-
-/**
- * Set the debug mode state
- *
- * If the debug mode is enabled, every incoming frame will be printed out.
- *
- * @param state 0 to disable debug mode, non 0 to enable it
- */
-void idealvolting_set_debug(uint8_t state);
+void idealvolting_sleep(void);
 
 /**
  * Print information about the current state of IdealVolting

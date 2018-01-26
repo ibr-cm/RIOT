@@ -136,7 +136,7 @@ void si_init(void)
 
 void si_master(void)
 {
-	cli();
+	puts("entering master mode");
 	i2c_init_master();
 	usi_twi_result_t result;
 	uint8_t data = 'w';
@@ -145,9 +145,12 @@ void si_master(void)
 		printf("result = %u\n", result);
 		_delay_ms(1000);
 	} while (result != USI_TWI_SUCCESS);
+	puts("leaving master mode");
 	/* This I2C implementation uses a different address notation */
 	i2c_slave_init(SI_I2C_ADDR << 1);
-	sei();
+	this_altbyte = 0;
+	TCNT1 = 0;  // Reset timer for timeout detection
+	req_buffer->rst_disable = 0x00;
 }
 
 void si_frame_received(void)
@@ -352,15 +355,17 @@ int main(void)
 		case SI_MASTER:
 			si_master();
 			state = SI_IDLE;
+			this_altbyte = req_buffer->alt_byte;
 			break;
 
 		case SI_IDLE:
-			if (req_buffer->alt_byte != this_altbyte)
-				si_frame_received();
 			if (req_buffer->rst_disable == 0xFF) {
 				SI_REPLY_DEBUG_RESET();
-				state = SI_DEBUG;
+				state = SI_MASTER;
+				break;
 			}
+			if (req_buffer->alt_byte != this_altbyte)
+				si_frame_received();
 			break;
 
 		case SI_TRANSIENT:
@@ -550,7 +555,7 @@ ISR(TIM1_OVF_vect)
 	/* External Watchdog: Reset if > DEADLOCK_THRESHOLD*/
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (req_buffer->rst_disable == 0x01)) {
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (state != SI_DEBUG)){	
-	if ((state != SI_DEBUG)) {
+	if ((state != SI_MASTER)) {
 		printf("%c:timeout\n", REPORT_ERROR);
 		rst_errors++;
 		/* If the watchdog is triggered => reset main MCU */
@@ -583,7 +588,7 @@ ISR(TIM1_OVF_vect)
 
 		/* Reset state machine */
 		startup = SI_STARTUP_DELAY;
-		state = SI_IDLE;
+		state = SI_MASTER;
 		next_state = SI_TRANSIENT;
 		SI_REPLY_DEBUG_RESET();
 		res_buffer->osccal = fact_default;
