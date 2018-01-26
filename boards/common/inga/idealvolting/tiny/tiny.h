@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <avr/io.h>
-#include "drv/i2c-master.h"
+#include "drv/usi_i2c_master.h"
 #include "drv/i2c-slave.h"
 #include "../include/idealvolting_config.h"
 #include "../include/idealvolting_frame.h"
@@ -23,6 +23,7 @@ struct table_entry {
 #define SI_IDLE                             3
 #define SI_RESET                            4
 #define SI_DEBUG                            5
+#define SI_MASTER                           6
 
 #define SI_STARTUP_DELAY                    7
 #define SI_VOLT_REG_OFFSET                  130//128///200// für 4mhz200
