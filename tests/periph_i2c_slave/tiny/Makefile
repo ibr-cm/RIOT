@@ -26,6 +26,7 @@ SOURCES_TINY= \
 HEADERS_TINY= \
               drv/usi_i2c_master.h \
               drv/sw_uart.h \
+              drv/usi.h \
               ${EMPTY}
 
 OBJECTS_TINY=$(shell echo "${SOURCES_TINY}" | sed -e 's/\.c/\.o/g')
