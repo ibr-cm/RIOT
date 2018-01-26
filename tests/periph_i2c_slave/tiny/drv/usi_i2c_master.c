@@ -1,7 +1,17 @@
 #include "usi_i2c_master.h"
 #include <avr/io.h>
 #include <util/delay.h>
-#include <stdio.h>
+#include "usi.h"
+
+#define SYS_CLK 1000.0  // [kHz]
+
+#ifdef TWI_FAST_MODE  // TWI FAST mode timing limits. SCL = 100-400kHz
+	#define T2_TWI    ((SYS_CLK *1300) / 1000000) + 1  // >1,3us
+	#define T4_TWI    ((SYS_CLK * 600) / 1000000) + 1  // >0,6us
+#else  // TWI STANDARD mode timing limits. SCL <= 100kHz
+	#define T2_TWI    ((SYS_CLK *4700) / 1000000) + 1  // >4,7us
+	#define T4_TWI    ((SYS_CLK *4000) / 1000000) + 1  // >4,0us
+#endif
 
 uint8_t _i2c_write_byte(uint8_t data);
 void _i2c_write_bit(uint8_t data);
@@ -12,7 +22,7 @@ void _i2c_start(void);
 void _i2c_stop(void);
 
 /*
- * USI TWI single master initialization function
+ * Initialise the usi as i2c master
  */
 void i2c_init_master(void)
 {
@@ -33,9 +43,9 @@ void i2c_init_master(void)
 }
 
 /*
- * Write len bytes from data to i2c address addr
+ * Write len bytes from data to a slave with the address addr.
  */
-uint8_t i2c_write_bytes(uint8_t addr, uint8_t *data, uint8_t len)
+usi_twi_result_t i2c_write_bytes(uint8_t addr, uint8_t *data, uint8_t len)
 {
 	_i2c_start();
 	if (!_i2c_write_byte(addr << 1))
@@ -49,9 +59,9 @@ uint8_t i2c_write_bytes(uint8_t addr, uint8_t *data, uint8_t len)
 }
 
 /*
- * Read len bytes from i2c address addr to data
+ * Read len bytes from a slave with the address addr to data.
  */
-uint8_t i2c_read_bytes(uint8_t addr, uint8_t *data, uint8_t len)
+usi_twi_result_t i2c_read_bytes(uint8_t addr, uint8_t *data, uint8_t len)
 {
 	_i2c_start();
 	if (!_i2c_write_byte((addr << 1) | 1))
@@ -62,7 +72,11 @@ uint8_t i2c_read_bytes(uint8_t addr, uint8_t *data, uint8_t len)
 	return USI_TWI_SUCCESS;
 }
 
-uint8_t i2c_read_regs(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
+/*
+ * Write the reg byte to a slave with the address addr and then
+ * read len bytes from the slave to data.
+ */
+usi_twi_result_t i2c_read_regs(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
 {
 	_i2c_start();
 	if (!_i2c_write_byte(addr << 1))
@@ -159,10 +173,6 @@ void _i2c_start(void)
 	PORT_USI |= (1 << PIN_USI_SDA);  // Release SDA.
 }
 
-/*
- * Function for generating a TWI Stop Condition. Used to release
- * the TWI bus.
- */
 void _i2c_stop(void)
 {
 	PORT_USI &= ~(1 << PIN_USI_SDA);  // Pull SDA low.

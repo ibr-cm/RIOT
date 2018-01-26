@@ -11,7 +11,7 @@ int main(void)
 {
 	uint8_t txbuffer[3] = {'a', 'b', 'c'};
 	uint8_t rxbuffer[8];
-	uint8_t error;
+	usi_twi_result_t error;
 	sw_uart_init();
 	i2c_init_master();
 	while (1) {
@@ -33,7 +33,7 @@ int main(void)
 			printf("Reading data failed: %u\n", error);
 		_delay_ms(1000);
 		int8_t tmp;
-		error = i2c_read_regs(TMP_ADDR, 0x00, &tmp, 1);
+		error = i2c_read_regs(TMP_ADDR, 0x00, (uint8_t *) &tmp, 1);
 		if (error == USI_TWI_SUCCESS)
 			printf("Temperature: %d\n", tmp);
 		else
