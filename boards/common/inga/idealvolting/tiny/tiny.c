@@ -141,15 +141,17 @@ void si_master(void)
 	usi_twi_result_t result;
 	uint8_t data = 'w';
 	do {
+		_delay_ms(1000);
 		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &data, 1);
 		printf("result = %u\n", result);
-		_delay_ms(1000);
 	} while (result != USI_TWI_SUCCESS);
 	puts("leaving master mode");
+	cli();
 	/* This I2C implementation uses a different address notation */
 	i2c_slave_init(SI_I2C_ADDR << 1);
-	this_altbyte = 0;
+	//this_altbyte = 0;
 	TCNT1 = 0;  // Reset timer for timeout detection
+	sei();
 	req_buffer->rst_disable = 0x00;
 }
 
@@ -567,10 +569,11 @@ ISR(TIM1_OVF_vect)
 		if (next_state != SI_TRANSIENT && error == 0) {
 			current_index = ((uint8_t) (this_temperature) >> 1);//get hashed index of the table
 			current_voltage -= SI_DEFAULT_VOLT_OFFSET;
+			if (table[(current_index)].info == SI_TABLE_VALUE_IS_MEASURED)
+				table_entries++;
 			table[(current_index)].voltage = current_voltage; //updating table entry
 			table[(current_index)].osccal = req_buffer->osccal;
 			table[(current_index)].info = SI_TABLE_VALUE_IS_MEASURED;
-			table_entries++;
 			SI_REPLY_DEBUG_TABLE_ENTRY();
 			/* Prediction Process:*/
 			if (table_entries >= SI_PREDICTION_THRESHOLD)

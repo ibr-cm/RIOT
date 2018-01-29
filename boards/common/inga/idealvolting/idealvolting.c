@@ -119,6 +119,12 @@ void wait_si_ready(void)
 
 void send_si_req(iv_req_t *req, iv_res_t *res)
 {
+	req->checksum = MCU_CHECK();
+	req->temperature = get_temp();
+	iv_state.temp = req->temperature;
+	req->osccal = OSCCAL;
+	req->alt_byte ^= 1;
+
 	i2c_acquire(IV_I2C_DEV);
 	i2c_write_regs(IV_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REQUEST, req, sizeof(*req));
@@ -128,39 +134,24 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 	i2c_read_regs(IV_I2C_DEV, SI_I2C_ADDR,
 			SI_REG_REPLY, res, sizeof(*res));
 	i2c_release(IV_I2C_DEV);
-}
 
-void prepare_si_req(iv_req_t *req)
-{
-	req->checksum = MCU_CHECK();
-	req->temperature = 22;//get_temp();
-	iv_state.temp = req->temperature;
-	req->osccal = OSCCAL;
-	req->alt_byte ^= 1;
-}
-
-void _become_i2c_slave(void)
-{
-	iv_req_t req = {.rst_disable = 0xFF};
-	i2c_acquire(IV_I2C_DEV);
-	i2c_write_regs(IV_I2C_DEV, SI_I2C_ADDR,
-			SI_REG_REQUEST, &req, sizeof(req));
-	i2c_init_slave(MEGA_SL_ADDR_SLEEP, _i2c_r_cb, _i2c_t_cb);
-	i2c_stop_slave(); // TODO
-	i2c_release(IV_I2C_DEV);
+	req->rst_flags = 0x00;
+	req->rst_disable = 0x00;
+	iv_state.vreg = res->voltage;
+	iv_state.osccal = res->osccal;
+	iv_state.table = (res->debug >> 6) & (3);
 }
 
 void _request_i2c_master(void)
 {
 	msg_t msg;
-	i2c_acquire(IV_I2C_DEV);
+	i2c_stop_slave();
 	i2c_init_slave(MEGA_SL_ADDR_READY, _i2c_r_cb, _i2c_t_cb);
 	do {
 		msg_receive(&msg);
 	} while (msg.content.value != 1);
 	i2c_stop_slave();
-	i2c_release(IV_I2C_DEV);
-	//i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
 }
 
 void *iv_thread(void *arg)
@@ -183,32 +174,25 @@ void *iv_thread(void *arg)
 	req.rst_disable = 0x00;
 	VSCALE_INIT(&vscale_dev);
 	wait_si_ready();
-	mutex_unlock(&iv_mutex);
 	iv_state.running = IV_ACTIVE;
+	mutex_unlock(&iv_mutex);
 
 	while (1) {
 		msg_receive(&msg);
+		mutex_lock(&iv_mutex);
 		if (msg.content.value == MSG_SLEEP) {
-			_become_i2c_slave();
+			req.rst_disable = 0xff;
+			send_si_req(&req, &res);
+			i2c_init_slave(MEGA_SL_ADDR_SLEEP, _i2c_r_cb, _i2c_t_cb);
 			iv_state.running = IV_SLEEPING;
-			continue;
 		} else if (msg.content.value == MSG_WAKE) {
 			iv_state.running = IV_READY;
 			_request_i2c_master();
-			req.alt_byte = 0;
 			iv_state.running = IV_ACTIVE;
-			continue;
-		} else if (iv_state.running != IV_ACTIVE) {
-			continue;
+		} else if (iv_state.running == IV_ACTIVE) {
+			send_si_req(&req, &res);
+			VSCALE_SET_REG(&vscale_dev, res.voltage);
 		}
-		mutex_lock(&iv_mutex);
-		prepare_si_req(&req);
-		send_si_req(&req, &res);
-		req.rst_flags = 0x00;
-		iv_state.vreg = res.voltage;
-		iv_state.osccal = res.osccal;
-		iv_state.table = (res.debug >> 6) & (3);
-		VSCALE_SET_REG(&vscale_dev, res.voltage);
 		mutex_unlock(&iv_mutex);
 	}
 
@@ -219,7 +203,6 @@ void idealvolting_init(void)
 {
 	iv_state.running = IV_READY;
 
-	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
 	mutex_init(&iv_mutex);
 	rtt_init();
 
