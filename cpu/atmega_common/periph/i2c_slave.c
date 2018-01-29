@@ -7,15 +7,20 @@
 #include <util/twi.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
+#include "cpu.h"
+
+#ifdef MODULE_PM_LAYERED
+#include "pm_layered.h"
+#endif
 
 uint8_t buffer_address, n_tx;
 uint8_t buffer[I2C_SLAVE_MAX_FRAME_SIZE];
 i2c_slave_rcb_t _rcb;  // Callback on data receive
 i2c_slave_tcb_t _tcb;  // Callback on data transmit
 
-
 void i2c_init_slave(uint8_t address, i2c_slave_rcb_t rcb, i2c_slave_tcb_t tcb)
 {
+	power_twi_enable();
 	_rcb = rcb;
 	_tcb = tcb;
 	// load address into TWI address register
@@ -28,6 +33,7 @@ void i2c_stop_slave(void)
 {
 	// clear acknowledge and enable bits
 	TWCR &= ~((1<<TWEA) | (1<<TWEN));
+	power_twi_disable();
 }
 
 ISR(TWI_vect)
