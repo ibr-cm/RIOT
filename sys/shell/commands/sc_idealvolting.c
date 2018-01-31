@@ -20,6 +20,7 @@
  */
 
 #include "idealvolting.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -42,8 +43,13 @@ int _idealvolting_handler(int argc, char **argv)
 		idealvolting_wakeup();
 		puts("Idealvolting is waking up.");
 	} else if (strcmp("sleep", argv[1]) == 0) {
-		idealvolting_sleep();
-		puts("IdealVolting is going to sleep.");
+		uint8_t duration;
+		if (argc > 2)
+			duration = atoi(argv[2]);
+		else
+			duration = 3;
+		printf("IdealVolting is going to sleep for %us.\n", duration);
+		idealvolting_sleep(duration);
 	} else {
 		printf("Unknown command: %s\n", argv[1]);
 	}

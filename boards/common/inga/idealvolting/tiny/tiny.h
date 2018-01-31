@@ -89,15 +89,19 @@ struct table_entry {
 #define DT_TARGET_SRC 16000;
 #endif
 
-#define REPORT_HELLO                        'h'
-#define REPORT_PERIODIC                     'p'
-#define REPORT_ERROR                        'e'
-#define REPORT_DEBUG                        'd'
+#define REPORT_HELLO                        "h"
+#define REPORT_PERIODIC                     "p"
+#define REPORT_ERROR                        "e"
+#define REPORT_DEBUG                        "d"
+#define REPORT_MASTER                       "m"
+
+#define ERROR_CHECKSUM                      "s"
+#define ERROR_TIMEOUT                       "t"
+#define ERROR_TEMP                          "T"
+#define ERROR_RESET                         "r"
 
 
 void init_table(void);
-uint8_t reset_voltage_level(void);
+void reset_voltage_level(void);
 void prediction(void);
-uint8_t get_table_status(void);
 void erase_eeprom(void);
-void send_report(char report_type);

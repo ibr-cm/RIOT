@@ -62,6 +62,7 @@ uint8_t this_altbyte = 0;
 volatile uint16_t this_delta_t = 0;
 static int8_t prv_temperature = 71;  //previous temperature
 static int8_t this_temperature;      //current temperature
+static uint8_t this_sleeptime;
 static uint8_t checksum, error;
 static uint8_t startup, current_voltage, iteration;
 static uint16_t delta_t = 55050;
@@ -104,14 +105,12 @@ void si_init(void)
 	SI_INIT_RESET_LINE();
 	SI_PULL_RESET_LINE();
 	_delay_ms(100);
-	uint8_t rvl_success = reset_voltage_level() == 0;
+	reset_voltage_level();
 	_delay_ms(100);
 	SI_RELEASE_RESET_LINE();
 
 	sw_uart_init();
 	_delay_ms(1000);
-	printf("rvl_success = %d\n", rvl_success);
-
 
 	/* Timer Initialization, Settings:
 	 * Prescaler 8, Overflow Interrupt every ~0.5s
@@ -125,6 +124,7 @@ void si_init(void)
 	/* Enable external Watchdog*/ //ToDo!!
 	req_buffer->rst_disable = 0x00;
 	startup = SI_STARTUP_DELAY;
+	this_sleeptime = 0;
 	iteration = 0;
 	current_voltage = SI_VOLT_REG_OFFSET;
 	init_table();
@@ -136,21 +136,65 @@ void si_init(void)
 
 void si_master(void)
 {
-	puts("entering master mode");
+	puts(REPORT_MASTER ":e");
 	i2c_init_master();
 	usi_twi_result_t result;
 	uint8_t data = 'w';
-	do {
+	while (true) {
 		_delay_ms(1000);
+		// see if Mega woke up
 		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &data, 1);
-		printf("result = %u\n", result);
-	} while (result != USI_TWI_SUCCESS);
-	puts("leaving master mode");
+		if (result == USI_TWI_SUCCESS) {
+			puts(REPORT_MASTER ":w1");
+			break;
+		}
+		if (startup) {
+			--startup;
+			continue;
+		}
+		// wake Mega up if timer expired
+		if (0 == this_sleeptime) {
+			puts(REPORT_MASTER ":w2");
+			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &data, 1);
+			if (result == USI_TWI_SUCCESS)
+				break;
+		} else {
+			printf(REPORT_MASTER ":s %u\n", this_sleeptime);
+		}
+		this_sleeptime--;
+		// if temperature changed adapt voltage
+		//puts("reading temp");
+		result = i2c_read_regs(TMP_ADDR, TMP_REG, (uint8_t *) &this_temperature, 1);
+		//printf("temp = %d°C\n", this_temperature);
+		if (result != USI_TWI_SUCCESS) { // the Mega is trying to sabotage the whole oparation
+			puts(REPORT_MASTER ":e1");
+			SI_PULL_RESET_LINE();
+			_delay_ms(200);
+			SI_RELEASE_RESET_LINE();
+			startup = SI_STARTUP_DELAY;
+			continue;
+		}
+		this_temperature += SI_TEMP_OFFSET;
+		current_index = ((uint8_t) (this_temperature) >> 1);
+		if ((table[(current_index)].info != SI_TABLE_VALUE_IS_EMPTY)) {
+			if (current_voltage != table[(current_index)].voltage) {
+				current_voltage = table[(current_index)].voltage;
+				uint8_t data[2] = {VSCALE_REG, current_voltage};
+				i2c_write_bytes(VSCALE_ADDR, data, sizeof(data));
+			}
+			iteration = 0;
+		// if new voltage not available wake Mega up
+		} else {
+			puts(REPORT_MASTER ":e2");
+			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &data, 1);
+			if (result == USI_TWI_SUCCESS)
+				break;
+		}
+	};
+	puts(REPORT_MASTER ":l");
 	cli();
-	/* This I2C implementation uses a different address notation */
 	i2c_slave_init(SI_I2C_ADDR << 1);
-	//this_altbyte = 0;
-	TCNT1 = 0;  // Reset timer for timeout detection
+	TCNT1 = 0;
 	sei();
 	req_buffer->rst_disable = 0x00;
 }
@@ -302,18 +346,18 @@ void si_main(void)
 	/* 1) Check if an Checksum error occurred*/
 	if (req_buffer->checksum != checksum) {
 		error = 1;
-		printf("%c:checksum\n", REPORT_ERROR);
+		puts(REPORT_ERROR ":" ERROR_CHECKSUM);
 	}
 	if (req_buffer->rst_flags == MCU_SW_RESET) {
 		error = 1;
-		printf("%c:sw_reset\n", REPORT_ERROR);
+		puts(REPORT_ERROR ":" ERROR_RESET);
 	}
 	/*Possible Temp-Readout error*/
 	if (((this_temperature + 10) <= prv_temperature)
 			|| (this_temperature >= (prv_temperature + 10))) {
 		error = 1;
 		current_index = ((uint8_t) (prv_temperature) >> 1);
-		printf("%c:temp_readout\n", REPORT_ERROR);
+		puts(REPORT_ERROR ":" ERROR_TEMP);
 	}
 
 	if (error)
@@ -335,6 +379,10 @@ void si_main(void)
 	else
 		res_buffer->osccal = req_buffer->osccal;
 	SI_UNLOCK();
+	printf(REPORT_PERIODIC ":v=%u,t=%d,n=%u\n",
+				current_voltage,
+				this_temperature - SI_TEMP_OFFSET,
+				table_entries);
 }
 
 /* Main routine
@@ -347,21 +395,19 @@ int main(void)
 	state = SI_INIT;
 	while (1) {
 		switch (state) {
-
 		case SI_INIT:
 			si_init();
 			state = SI_MASTER;
 			next_state = SI_TRANSIENT;
 			break;
-
 		case SI_MASTER:
 			si_master();
 			state = SI_IDLE;
 			this_altbyte = req_buffer->alt_byte;
 			break;
-
 		case SI_IDLE:
 			if (req_buffer->rst_disable == 0xFF) {
+				this_sleeptime = req_buffer->rst_flags;
 				SI_REPLY_DEBUG_RESET();
 				state = SI_MASTER;
 				break;
@@ -369,26 +415,17 @@ int main(void)
 			if (req_buffer->alt_byte != this_altbyte)
 				si_frame_received();
 			break;
-
 		case SI_TRANSIENT:
 			si_transient();
-			if (sent_hello) {
-				send_report(REPORT_PERIODIC);
-			} else {
-				printf("%c:hello\n", REPORT_HELLO);
+			if (!sent_hello) {
 				sent_hello = 1;
+				puts(REPORT_HELLO ":");
 			}
 			state = SI_IDLE;
 			break;
-
 		case SI_MAIN:
 			si_main();
-			send_report(REPORT_PERIODIC);
 			state = SI_IDLE;
-			break;
-
-		case SI_RESET:
-			/* wäre schöner, wenn es hier implementiert würde*/
 			break;
 		}
 	}
@@ -420,12 +457,12 @@ void init_table(void)
  * ToDO: den I2C Master aufräumen
  * todo Value to write
  */
-uint8_t reset_voltage_level(void)
+void reset_voltage_level(void)
 {
-	char txb[2] = {VREG_OP, SI_VOLT_REG_RESET};
+	uint8_t txb[2] = {VREG_OP, SI_VOLT_REG_RESET};
 	current_voltage = SI_VOLT_REG_RESET;
 	i2c_init_master();
-	return i2c_write_bytes((VREG_DEV_ADDR_W >> 1), txb, sizeof(txb));
+	i2c_write_bytes((VREG_DEV_ADDR_W >> 1), txb, sizeof(txb));
 }
 
 void prediction_fill_table(
@@ -515,39 +552,6 @@ void prediction(void)
 	eeprom_write_byte(EEPROM_ADDR_VOFF, 0);
 }
 
-/*
- *  Table Status Byte:
- *
- *    7     6     5     4     3     2     1     0
- * +-----+-----+-----+-----+-----+-----+-----+-----+
- * |prdc?|            # of table entries           |
- * +-----+-----+-----+-----+-----+-----+-----+-----+
- */
-uint8_t get_table_status(void)
-{
-	uint8_t index, m, p;
-	m = 0;
-	p = 0;
-	for (index = 0; index < SI_TABLE_SIZE; index++) {
-		if (table[index].info == SI_TABLE_VALUE_IS_MEASURED)
-			m++;
-		else if (table[index].info == SI_TABLE_VALUE_IS_PREDICTED)
-			p++;
-	}
-	if (p > 0)
-		m |= (1 << 7);
-	return m;
-}
-
-void send_report(char report_type)
-{
-	printf("%c:v=%u,t=%d,n=%u\n",
-			report_type,
-			current_voltage,
-			this_temperature - SI_TEMP_OFFSET,
-			table_entries);
-}
-
 ISR(TIM1_OVF_vect)
 {
 	/* Counter for HW-Reset */
@@ -556,9 +560,9 @@ ISR(TIM1_OVF_vect)
 
 	/* External Watchdog: Reset if > DEADLOCK_THRESHOLD*/
 	//if ((count_overflows > DEADLOCK_THRESHOLD) && (req_buffer->rst_disable == 0x01)) {
-	//if ((count_overflows > DEADLOCK_THRESHOLD) && (state != SI_DEBUG)){	
+	//if ((count_overflows > DEADLOCK_THRESHOLD) && (state != SI_DEBUG)){
 	if ((state != SI_MASTER)) {
-		printf("%c:timeout\n", REPORT_ERROR);
+		puts(REPORT_ERROR ":" ERROR_TIMEOUT);
 		rst_errors++;
 		/* If the watchdog is triggered => reset main MCU */
 		cli();
@@ -569,7 +573,7 @@ ISR(TIM1_OVF_vect)
 		if (next_state != SI_TRANSIENT && error == 0) {
 			current_index = ((uint8_t) (this_temperature) >> 1);//get hashed index of the table
 			current_voltage -= SI_DEFAULT_VOLT_OFFSET;
-			if (table[(current_index)].info == SI_TABLE_VALUE_IS_MEASURED)
+			if (table[(current_index)].info != SI_TABLE_VALUE_IS_MEASURED)
 				table_entries++;
 			table[(current_index)].voltage = current_voltage; //updating table entry
 			table[(current_index)].osccal = req_buffer->osccal;
