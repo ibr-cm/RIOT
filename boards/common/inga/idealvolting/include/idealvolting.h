@@ -69,7 +69,7 @@ void idealvolting_wakeup(void);
 /**
  * Disable Idealvolting
  */
-void idealvolting_sleep(void);
+void idealvolting_sleep(uint8_t duration);
 
 /**
  * Print information about the current state of IdealVolting
