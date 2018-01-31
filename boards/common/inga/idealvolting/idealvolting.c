@@ -41,6 +41,7 @@ enum {
 	IV_SLEEPING,
 	IV_READY
 };
+
 enum {
 	MSG_PERIODIC = 0,
 	MSG_I2C_W = 1,
@@ -70,8 +71,7 @@ void _rtt_cb(void *arg)
 	rtt_set_alarm(last, _rtt_cb, NULL);
 
 	msg_t msg;
-	msg.type = 0;
-	msg.content.value = MSG_PERIODIC;
+	msg.type = MSG_PERIODIC;
 	msg_send(&msg, iv_thread_pid);
 }
 
@@ -79,8 +79,7 @@ void _i2c_r_cb(uint8_t n, uint8_t *data)
 {
 	if (n == 1 && data[0] == 'w') {
 		msg_t msg;
-		msg.type = 0;
-		msg.content.value = MSG_I2C_W;
+		msg.type = MSG_I2C_W;
 		msg_send(&msg, iv_thread_pid);
 	}
 }
@@ -149,7 +148,7 @@ void _request_i2c_master(void)
 	i2c_init_slave(MEGA_SL_ADDR_READY, _i2c_r_cb, _i2c_t_cb);
 	do {
 		msg_receive(&msg);
-	} while (msg.content.value != 1);
+	} while (msg.type != MSG_I2C_W);
 	i2c_stop_slave();
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
 }
@@ -180,18 +179,30 @@ void *iv_thread(void *arg)
 	while (1) {
 		msg_receive(&msg);
 		mutex_lock(&iv_mutex);
-		if (msg.content.value == MSG_SLEEP) {
+		switch (msg.type) {
+		case MSG_SLEEP:
 			req.rst_disable = 0xff;
+			req.rst_flags = msg.content.value;
 			send_si_req(&req, &res);
 			i2c_init_slave(MEGA_SL_ADDR_SLEEP, _i2c_r_cb, _i2c_t_cb);
 			iv_state.running = IV_SLEEPING;
-		} else if (msg.content.value == MSG_WAKE) {
+			break;
+		case MSG_WAKE:
 			iv_state.running = IV_READY;
 			_request_i2c_master();
 			iv_state.running = IV_ACTIVE;
-		} else if (iv_state.running == IV_ACTIVE) {
-			send_si_req(&req, &res);
-			VSCALE_SET_REG(&vscale_dev, res.voltage);
+			break;
+		case MSG_I2C_W:
+			puts("I was woken up");
+			i2c_stop_slave();
+			i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+			iv_state.running = IV_ACTIVE;
+			break;
+		default:
+			if (iv_state.running == IV_ACTIVE) {
+				send_si_req(&req, &res);
+				VSCALE_SET_REG(&vscale_dev, res.voltage);
+			}
 		}
 		mutex_unlock(&iv_mutex);
 	}
@@ -228,7 +239,7 @@ void idealvolting_wakeup(void)
 	msg_send(&msg, iv_thread_pid);
 }
 
-void idealvolting_sleep(void)
+void idealvolting_sleep(uint8_t duration)
 {
 	uint8_t valid;
 	mutex_lock(&iv_mutex);
@@ -237,8 +248,8 @@ void idealvolting_sleep(void)
 	if (!valid)
 		return;
 	msg_t msg;
-	msg.type = 0;
-	msg.content.value = MSG_SLEEP;
+	msg.type = MSG_SLEEP;
+	msg.content.value = duration;
 	msg_send(&msg, iv_thread_pid);
 }
 

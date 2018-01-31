@@ -55,9 +55,13 @@
 #if defined BOARD_INGA_BLUE
 #define TMP_ADDR      0x48             /*< Address of the temp sensor */
 #define TMP_REG       0x00             /*< Register to read temp byte */
+#define VSCALE_ADDR   0x2c
+#define VSCALE_REG    0
 #elif defined BOARD_REAPER
 #define TMP_ADDR      0x76
 #define TMP_REG       0x22
+#define VSCALE_ADDR   0x2a
+#define VSCALE_REG    0x11
 #endif
 /* @} */
 
