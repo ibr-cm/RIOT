@@ -186,16 +186,23 @@ void *iv_thread(void *arg)
 			send_si_req(&req, &res);
 			i2c_init_slave(MEGA_SL_ADDR_SLEEP, _i2c_r_cb, _i2c_t_cb);
 			iv_state.running = IV_SLEEPING;
+			rtt_poweroff();
 			break;
 		case MSG_WAKE:
 			iv_state.running = IV_READY;
 			_request_i2c_master();
+			rtt_init();
+			last = TICKS_TO_WAIT;
+			rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 			iv_state.running = IV_ACTIVE;
 			break;
 		case MSG_I2C_W:
 			puts("I was woken up");
+			rtt_init();
 			i2c_stop_slave();
 			i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+			last = TICKS_TO_WAIT;
+			rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 			iv_state.running = IV_ACTIVE;
 			break;
 		default:
@@ -234,8 +241,7 @@ void idealvolting_wakeup(void)
 	if (!valid)
 		return;
 	msg_t msg;
-	msg.type = 0;
-	msg.content.value = MSG_WAKE;
+	msg.type = MSG_WAKE;
 	msg_send(&msg, iv_thread_pid);
 }
 
