@@ -22,6 +22,7 @@ SOURCES_TINY= \
               drv/i2c-slave.c \
               tiny.c \
               drv/sw_uart.c \
+              vtable.c \
               ${EMPTY}
 
 HEADERS_TINY= \
@@ -29,6 +30,7 @@ HEADERS_TINY= \
               drv/i2c-slave.h \
               drv/usi.h \
               drv/sw_uart.h \
+              vtable.h \
               ../include/idealvolting_config.h \
               ../include/idealvolting_frame.h \
               ${EMPTY}
