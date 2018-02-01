@@ -34,17 +34,6 @@ struct table_entry {
 #define SI_DELTA_T_MARGIN                   25
 #define SI_TEMP_OFFSET                      25
 
-#define SI_PREDICTION_THRESHOLD             7
-#define SI_TABLE_SIZE                       51
-#define SI_TABLE_VALUE_IS_EMPTY             0xFF
-#define SI_TABLE_VALUE_IS_MEASURED          0x01
-#define SI_TABLE_VALUE_IS_PREDICTED         0x02
-#define SI_TABLE_PREDICTION                 0x03
-
-#define EEPROM_ADDR_AVAIL                   ((void *) 0x00)
-#define EEPROM_ADDR_VOFF                    ((void *) 0x01)
-#define EEPROM_ADDR_TABLE                   ((void *) 0x02)
-
 #define SI_PWR_MONITOR_ICC_ADC              ADC_CHANNEL_1
 #define SI_PWR_MONITOR_VCC_ADC              ADC_CHANNEL_0
 
@@ -95,13 +84,11 @@ struct table_entry {
 #define REPORT_DEBUG                        "d"
 #define REPORT_MASTER                       "m"
 
-#define ERROR_CHECKSUM                      "s"
+#define ERROR_CHECKSUM                      "c"
 #define ERROR_TIMEOUT                       "t"
 #define ERROR_TEMP                          "T"
 #define ERROR_RESET                         "r"
 
 
-void init_table(void);
 void reset_voltage_level(void);
-void prediction(void);
 void erase_eeprom(void);
