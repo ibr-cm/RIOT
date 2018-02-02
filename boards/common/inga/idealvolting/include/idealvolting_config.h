@@ -23,6 +23,8 @@
 #ifndef IDEALVOLTING_CONFIG_H
 #define IDEALVOLTING_CONFIG_H
 
+#include "../alu_check.h"
+
 #if defined BOARD_INGA_BLUE && defined RIOT_BOARD
 #include "ad5242.h"
 #include "ad5242_params.h"
@@ -83,9 +85,9 @@
  * @brief MCU self check configuration
  * @{
  */
-#define MCU_CHECK()               alu_check((uint8_t) 1212987413.12)
-#define MCU_CHECK_RESULT_TYPE     uint8_t
-#define MCU_CHECK_RESULT_CORRECT  19
+#define MCU_CHECK()               alu_check_alt()//alu_check((uint8_t) 1212987413.12)
+#define MCU_CHECK_RESULT_TYPE     alu_check_alt_result_t//uint8_t
+#define MCU_CHECK_RESULT_CORRECT  alu_check_alt_result_correct//{19}
 /* @} */
 
 #endif /* IDEALVOLTING_CONFIG_H */

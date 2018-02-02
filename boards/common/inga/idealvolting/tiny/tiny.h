@@ -26,7 +26,7 @@ struct table_entry {
 #define SI_MASTER                           6
 
 #define SI_STARTUP_DELAY                    7
-#define SI_VOLT_REG_OFFSET                  130//128///200// für 4mhz200
+#define SI_VOLT_REG_OFFSET                  180//130//128///200// für 4mhz200
 #define SI_VOLT_REG_RESET                   140
 #define SI_DEFAULT_VOLT_OFFSET              4
 #define MATRIX_SIZE                         4
