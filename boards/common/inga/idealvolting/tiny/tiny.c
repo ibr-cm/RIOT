@@ -62,7 +62,7 @@ volatile uint16_t this_delta_t = 0;
 static int8_t prv_temperature = 71;  //previous temperature
 static int8_t this_temperature;      //current temperature
 static uint8_t this_sleeptime;
-static uint8_t checksum, error;
+static uint8_t error;
 static uint8_t startup, current_voltage, iteration;
 static uint16_t delta_t = 55050;
 static uint8_t state, next_state;
@@ -79,6 +79,7 @@ static uint8_t fact_default;
 
 /* FUNCTION DECLARARTIONS */
 void approach_voltage(uint8_t value);
+void reset_mega(void);
 
 /*
  * Reset voltage, set initial values, initialize timers, start UART and i2c
@@ -204,7 +205,6 @@ void si_frame_received(void)
 	/* Readout OSCALL Value from man MCU.
 	 * Get Temperature and add offset due to negative values */
 	fact_default = req_buffer->osccal; //??
-	checksum = MCU_CHECK_RESULT_CORRECT; //validate(rxbuffer[mcu_temperature]);
 	this_temperature = req_buffer->temperature;
 	this_temperature += SI_TEMP_OFFSET;
 	/* DEBUG ONLY:*/
@@ -263,11 +263,15 @@ void si_transient(void)
  */
 void si_main_error(void)
 {
-	current_voltage -= SI_DEFAULT_VOLT_OFFSET;
 	alu_errors++;
-	create_table_entry(current_voltage, req_buffer->osccal);
-	/* DEBUG ONLY*/
-	SI_REPLY_DEBUG_TABLE_ENTRY();
+	if (alu_errors == 1) {
+		current_voltage -= SI_DEFAULT_VOLT_OFFSET;
+		create_table_entry(current_voltage, req_buffer->osccal);
+		/* DEBUG ONLY*/
+		SI_REPLY_DEBUG_TABLE_ENTRY();
+	} else if (alu_errors == 3) {
+		reset_mega();
+	}
 }
 
 /*
@@ -282,6 +286,7 @@ void si_main_error(void)
  */
 void si_main_no_error(void)
 {
+	alu_errors = 0;
 	uint8_t temp_diff = this_temperature - prv_temperature;
 	if (temp_diff <= -2) {
 		current_voltage -= 5;
@@ -318,10 +323,19 @@ void si_main(void)
 	res_buffer->dt = this_delta_t;
 
 	current_index = ((uint8_t) (this_temperature) >> 1);
+	for (uint8_t i = 0; i < sizeof(req_buffer->checksum); ++i) {
+		if (((uint8_t *) &req_buffer->checksum)[i] != (MCU_CHECK_RESULT_CORRECT)[i]) {
+			error = 1;
+			puts(REPORT_ERROR ":" ERROR_CHECKSUM);
+			break;
+		}
+	}
+	/*
 	if (req_buffer->checksum != checksum) {
 		error = 1;
 		puts(REPORT_ERROR ":" ERROR_CHECKSUM);
 	}
+	*/
 	if (req_buffer->rst_flags == MCU_SW_RESET) {
 		error = 1;
 		puts(REPORT_ERROR ":" ERROR_RESET);
@@ -405,6 +419,31 @@ void reset_voltage_level(void)
 	i2c_write_bytes((VREG_DEV_ADDR_W >> 1), txb, sizeof(txb));
 }
 
+void reset_mega(void)
+{
+	cli();
+	SI_PULL_RESET_LINE();
+	_delay_ms(300);
+	reset_voltage_level();
+	i2c_slave_init(SI_I2C_ADDR << 1);
+
+	_delay_ms(300);
+	SI_LOCK();
+	SI_RELEASE_RESET_LINE();
+
+	/* Reset state machine */
+	startup = SI_STARTUP_DELAY;
+	master = 1;
+	state = SI_IDLE;
+	next_state = SI_TRANSIENT;
+	SI_REPLY_DEBUG_RESET();
+	res_buffer->osccal = fact_default;
+	res_buffer->voltage = SI_VOLT_REG_RESET;
+	sei();
+	this_altbyte = 0;
+	SI_UNLOCK();
+}
+
 ISR(TIM1_OVF_vect)
 {
 	/* Counter for HW-Reset */
@@ -414,13 +453,9 @@ ISR(TIM1_OVF_vect)
 	if (!master) {
 		puts(REPORT_ERROR ":" ERROR_TIMEOUT);
 		rst_errors++;
-		/* If the watchdog is triggered => reset main MCU */
-		cli();
-		SI_PULL_RESET_LINE();
-		
 		/* Only store values to the table when we are not in transient mode
 		   and the timeout does not happen immediately after another error */
-		if (next_state != SI_TRANSIENT && (error == 0 || count_overflows >= 3)) {
+		if (error == 0 || count_overflows >= 3) {
 			current_voltage -= SI_DEFAULT_VOLT_OFFSET;
 			current_index = ((uint8_t) (this_temperature) >> 1);
 			create_table_entry(current_voltage, req_buffer->osccal);
@@ -429,24 +464,7 @@ ISR(TIM1_OVF_vect)
 				prediction();
 			count_overflows = 0;
 		}
-		_delay_ms(300);
-		reset_voltage_level();
-		i2c_slave_init(SI_I2C_ADDR << 1);
-
-		_delay_ms(300);
-		SI_LOCK();
-		SI_RELEASE_RESET_LINE();
-
-		/* Reset state machine */
-		startup = SI_STARTUP_DELAY;
-		master = 1;
-		state = SI_IDLE;
-		next_state = SI_TRANSIENT;
-		SI_REPLY_DEBUG_RESET();
-		res_buffer->osccal = fact_default;
-		res_buffer->voltage = SI_VOLT_REG_RESET;
-		sei();	 
-		this_altbyte = 0;
-		SI_UNLOCK();
+		/* If the watchdog is triggered => reset main MCU */
+		reset_mega();
 	}
 }
