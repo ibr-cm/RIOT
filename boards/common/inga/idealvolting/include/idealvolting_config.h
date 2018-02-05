@@ -85,9 +85,9 @@
  * @brief MCU self check configuration
  * @{
  */
-#define MCU_CHECK()               alu_check_alt()//alu_check((uint8_t) 1212987413.12)
-#define MCU_CHECK_RESULT_TYPE     alu_check_alt_result_t//uint8_t
-#define MCU_CHECK_RESULT_CORRECT  alu_check_alt_result_correct//{19}
+#define MCU_CHECK()               alu_check()
+#define MCU_CHECK_RESULT_TYPE     alu_check_result_t
+#define MCU_CHECK_RESULT_CORRECT  alu_check_result_correct
 /* @} */
 
 #endif /* IDEALVOLTING_CONFIG_H */
