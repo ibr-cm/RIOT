@@ -25,7 +25,7 @@
 #include "alu_check.h"
 #include "idealvolting_config.h"
 
-int alu_check(int test_data)
+int alu_check(void)
 {
 	static volatile uint8_t i, j, k;
 
@@ -34,6 +34,7 @@ int alu_check(int test_data)
 	static volatile double c_c[ALU_CHECK_N][ALU_CHECK_N];
 	static volatile double d_d;
 
+	const uint8_t test_data = (uint8_t) 1212987413.12;
 	unsigned char *pf = (unsigned char *) &d_d;
 	uint16_t tmp = 0;
 
