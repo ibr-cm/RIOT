@@ -27,6 +27,10 @@
 
 #define ALU_CHECK_N 3
 
+typedef uint8_t alu_check_result_t;
+
+static const uint8_t alu_check_result_correct[1] = {19};
+
 typedef struct {
 	uint8_t c_f[(ALU_CHECK_N + 1) * (ALU_CHECK_N + 1)];
 } alu_check_alt_result_t;
@@ -38,12 +42,9 @@ static const uint8_t alu_check_alt_result_correct[(ALU_CHECK_N + 1) * (ALU_CHECK
 /**
  * Perform matrix calculation to check the ALU
  *
- * If test_data is ((uint8_t) 1212987413.12), the result should be 19.
- *
- * @param[in] test_data Seed for the matrix generation
  * @return Result of the calculation
  */
-int alu_check(int test_data);
+int alu_check(void);
 
 alu_check_alt_result_t alu_check_alt(void);
 

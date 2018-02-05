@@ -197,7 +197,6 @@ void *iv_thread(void *arg)
 			iv_state.running = IV_ACTIVE;
 			break;
 		case MSG_I2C_W:
-			puts("I was woken up");
 			rtt_init();
 			i2c_stop_slave();
 			i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);

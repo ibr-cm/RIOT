@@ -51,6 +51,7 @@
 #include "vtable.h"
 #include "drv/adc-drv.h"
 #include "drv/sw_uart.h"
+#include "drv/temp.h"
 
 static iv_req_t *req_buffer = (iv_req_t *) rxbuffer;
 static uint8_t *lock_buffer = (uint8_t *) txbuffer;
@@ -72,6 +73,7 @@ static uint8_t master = 0;
 static uint8_t alu_errors = 0;
 static uint8_t rst_errors = 0;
 static uint8_t sent_hello = 0;
+static uint8_t temp_setup = 0;
 
 ///For deadlock reset
 volatile uint8_t count_overflows = 0;
@@ -136,6 +138,10 @@ void si_master(void)
 {
 	puts(REPORT_MASTER ":e");
 	i2c_init_master();
+	if (!temp_setup) {
+		setup_temp();
+		temp_setup = 1;
+	}
 	usi_twi_result_t result;
 	uint8_t data = 'w';
 	while (true) {
@@ -161,7 +167,7 @@ void si_master(void)
 		}
 		this_sleeptime--;
 		// if temperature changed adapt voltage
-		result = i2c_read_regs(TMP_ADDR, TMP_REG, (uint8_t *) &this_temperature, 1);
+		result = get_temp(&this_temperature);
 		if (result != USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":e1");
 			SI_PULL_RESET_LINE();
@@ -330,12 +336,6 @@ void si_main(void)
 			break;
 		}
 	}
-	/*
-	if (req_buffer->checksum != checksum) {
-		error = 1;
-		puts(REPORT_ERROR ":" ERROR_CHECKSUM);
-	}
-	*/
 	if (req_buffer->rst_flags == MCU_SW_RESET) {
 		error = 1;
 		puts(REPORT_ERROR ":" ERROR_RESET);
