@@ -164,8 +164,8 @@ void si_master(void)
 				break;
 		} else {
 			printf(REPORT_MASTER ":s %u\n", this_sleeptime);
+			this_sleeptime--;
 		}
-		this_sleeptime--;
 		// if temperature changed adapt voltage
 		result = get_temp(&this_temperature);
 		if (result != USI_TWI_SUCCESS) {
@@ -189,8 +189,15 @@ void si_master(void)
 		} else {
 			puts(REPORT_MASTER ":e2");
 			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &data, 1);
-			if (result == USI_TWI_SUCCESS)
+			if (result == USI_TWI_SUCCESS) {
 				break;
+			} else {
+				puts(REPORT_MASTER ":e3");
+				SI_PULL_RESET_LINE();
+				_delay_ms(200);
+				SI_RELEASE_RESET_LINE();
+				startup = SI_STARTUP_DELAY;
+			}
 		}
 	};
 	puts(REPORT_MASTER ":l");
