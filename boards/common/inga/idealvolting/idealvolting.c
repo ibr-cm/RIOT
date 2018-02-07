@@ -251,7 +251,7 @@ void idealvolting_sleep(uint8_t duration)
 {
 	uint8_t valid;
 	mutex_lock(&iv_mutex);
-	valid = (iv_state.running == IV_ACTIVE);
+	valid = (iv_state.running == IV_ACTIVE && iv_state.table);
 	mutex_unlock(&iv_mutex);
 	if (!valid)
 		return;
