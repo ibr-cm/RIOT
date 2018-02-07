@@ -107,13 +107,13 @@ uint8_t check_reset(void)
 void wait_si_ready(void)
 {
 	uint8_t si_state;
+	i2c_acquire(IV_I2C_DEV);
 	do {
-		i2c_acquire(IV_I2C_DEV);
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
 				SI_REG_LOCK, &si_state);
-		i2c_release(IV_I2C_DEV);
 		// Todo: Wait before trying again?
 	} while (si_state != SI_READY);
+	i2c_release(IV_I2C_DEV);
 }
 
 void send_si_req(iv_req_t *req, iv_res_t *res)
@@ -150,7 +150,9 @@ void _request_i2c_master(void)
 		msg_receive(&msg);
 	} while (msg.type != MSG_I2C_W);
 	i2c_stop_slave();
+	i2c_acquire(IV_I2C_DEV);
 	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+	i2c_release(IV_I2C_DEV);
 }
 
 void *iv_thread(void *arg)
@@ -218,6 +220,7 @@ void *iv_thread(void *arg)
 
 void idealvolting_init(void)
 {
+	(void) iv_thread_stack;
 	iv_state.running = IV_READY;
 
 	mutex_init(&iv_mutex);
