@@ -24,14 +24,14 @@
 
 int max541x_init(max541x_t *dev, const max541x_params_t *params)
 {
+	uint8_t res;
 	dev->i2c = params->i2c_dev;
 	dev->addr = params->addr;
 	assert((dev->addr & 0x78) == 0x28);
-	if (i2c_init_master(dev->i2c, params->i2c_spd) != 0) {
-		i2c_release(dev->i2c);
-		return -1;
-	}
-	return 0;
+	i2c_acquire(dev->i2c);
+	res = i2c_init_master(dev->i2c, params->i2c_spd);
+	i2c_release(dev->i2c);
+	return res > 0;
 }
 
 int max541x_set_reg(max541x_t *dev, uint8_t value)
