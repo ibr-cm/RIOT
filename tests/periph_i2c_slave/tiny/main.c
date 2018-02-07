@@ -12,6 +12,13 @@ int main(void)
 	uint8_t txbuffer[3] = {'a', 'b', 'c'};
 	uint8_t rxbuffer[8];
 	usi_twi_result_t error;
+#ifdef BOARD_REAPER
+	DDRA &=~(1<<PA2);   // VBAT_OK input test
+	DDRA |= (1<<PA1);   // Enable i2c level shifter
+	DDRA |= (1<<PA3);   // VOUT_EN buck enable test
+	PORTA |= (1<<PA1);  // Enable i2c level shifter
+	PORTA |= (1<<PA3);  // Enable buck
+#endif
 	sw_uart_init();
 	i2c_init_master();
 	while (1) {
