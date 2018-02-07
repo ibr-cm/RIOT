@@ -64,8 +64,9 @@ int cmd_init_master(int argc, char **argv)
         puts("Error: Speed value not in range (0 - 4)");
         return 1;
     }
-
+    i2c_acquire(dev);
     res = i2c_init_master(dev, map_speed[speed]);
+    i2c_release(dev);
     if (res == -1) {
         puts("Error: Init: Given device not available");
         return 1;
@@ -104,6 +105,7 @@ int cmd_write(int argc, char **argv)
         data[i] = atoi(argv[i + 2]);
     }
 
+    i2c_acquire(i2c_dev);
     if (length == 1) {
         printf("i2c_write_byte(I2C_%i, 0x%02x, 0x%02x)\n", i2c_dev, addr, data[0]);
         res = i2c_write_byte(i2c_dev, addr, data[0]);
@@ -116,6 +118,7 @@ int cmd_write(int argc, char **argv)
         puts("])");
         res = i2c_write_bytes(i2c_dev, addr, data, length);
     }
+    i2c_release(i2c_dev);
 
     if (res < 0) {
         puts("Error: no bytes were written");
@@ -150,6 +153,7 @@ int cmd_write_reg(int argc, char **argv)
         data[i] = atoi(argv[i + 3]);
     }
 
+    i2c_acquire(i2c_dev);
     if (length == 1) {
         printf("i2c_write_reg(I2C_%i, 0x%02x, 0x%02x, 0x%02x)\n",
                i2c_dev, addr, reg, data[0]);
@@ -163,6 +167,7 @@ int cmd_write_reg(int argc, char **argv)
         puts("])");
         res = i2c_write_regs(i2c_dev, addr, reg, data, length);
     }
+    i2c_release(i2c_dev);
 
     if (res < 1) {
         puts("Error: no bytes were written");
@@ -200,12 +205,15 @@ int cmd_read(int argc, char **argv)
     }
     else if (length == 1) {
         printf("i2c_read_byte(I2C_%i, 0x%02x)\n", i2c_dev, addr);
+        i2c_acquire(i2c_dev);
         res = i2c_read_byte(i2c_dev, addr, data);
     }
     else {
         printf("i2c_read_bytes(I2C_%i, 0x%02x, %i)\n", i2c_dev, addr, length);
+        i2c_acquire(i2c_dev);
         res = i2c_read_bytes(i2c_dev, addr, data, length);
     }
+    i2c_release(i2c_dev);
 
     if (res < 1) {
         puts("Error: no bytes were read");
@@ -248,12 +256,15 @@ int cmd_read_reg(int argc, char **argv)
     }
     else if (length == 1) {
         printf("i2c_read_reg(I2C_%i, 0x%02x, 0x%02x)\n", i2c_dev, addr, reg);
+        i2c_acquire(i2c_dev);
         res = i2c_read_reg(i2c_dev, addr, reg, data);
     }
     else {
         printf("i2c_read_regs(I2C_%i, 0x%02x, 0x%02x, %i)\n", i2c_dev, addr, reg, length);
+        i2c_acquire(i2c_dev);
         res = i2c_read_regs(i2c_dev, addr, reg, data, length);
     }
+    i2c_release(i2c_dev);
 
     if (res < 1) {
         puts("Error: no bytes were read");
