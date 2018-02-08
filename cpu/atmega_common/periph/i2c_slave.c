@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include "cpu.h"
+#include "board.h"
 
 #ifdef MODULE_PM_LAYERED
 #include "pm_layered.h"
@@ -46,6 +47,9 @@ ISR(TWI_vect)
 		buffer_address = 0;
 		// clear TWI interrupt flag, prepare to receive next byte and acknowledge
 		TWCR |= (1 << TWIE) | (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
+		pm_block(PM_INVALID_TWI);
+		LED1_TOGGLE;
+		LED2_TOGGLE;
 		break;
 	case TW_SR_DATA_ACK: // data has been received in slave receiver mode
 		// save the received byte inside data
@@ -65,9 +69,16 @@ ISR(TWI_vect)
 			TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEN);
 		}
 		break;
+	case TW_SR_STOP: // finished receiving data
+		pm_unblock(PM_INVALID_TWI);
+		_rcb(buffer_address, buffer);
+		// prepare TWI to be addressed again
+		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
+		break;
 	case TW_ST_SLA_ACK:
 		buffer_address = 0;
 		n_tx = _tcb(buffer);
+		pm_block(PM_INVALID_TWI);
 		__attribute__ ((fallthrough));
 	case TW_ST_DATA_ACK: // device has been addressed to be a transmitter
 		// copy the specified buffer address into the TWDR register for transmission
@@ -85,11 +96,9 @@ ISR(TWI_vect)
 			TWCR |= (1<<TWIE) | (1<<TWINT) | (1<<TWEN);
 		}
 		break;
-	case TW_SR_STOP: // finished receiving data
-		_rcb(buffer_address, buffer);
-		// prepare TWI to be addressed again
-		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
-		break;
+	case TW_ST_DATA_NACK:
+		pm_unblock(PM_INVALID_TWI);
+		__attribute__ ((fallthrough));
 	default:
 		// if none of the above apply prepare TWI to be addressed again
 		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);

@@ -143,11 +143,10 @@ void si_master(void)
 		temp_setup = 1;
 	}
 	usi_twi_result_t result;
-	uint8_t data = 'w';
 	while (true) {
 		_delay_ms(1000);
 		// see if Mega woke up
-		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &data, 1);
+		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &this_sleeptime, 1);
 		if (result == USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":w1");
 			break;
@@ -159,7 +158,7 @@ void si_master(void)
 		// wake Mega up if timer expired
 		if (0 == this_sleeptime) {
 			puts(REPORT_MASTER ":w2");
-			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &data, 1);
+			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &this_sleeptime, 1);
 			if (result == USI_TWI_SUCCESS)
 				break;
 		} else {
@@ -188,7 +187,7 @@ void si_master(void)
 		// if new voltage not available wake Mega up
 		} else {
 			puts(REPORT_MASTER ":e2");
-			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &data, 1);
+			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &this_sleeptime, 1);
 			if (result == USI_TWI_SUCCESS) {
 				break;
 			} else {
