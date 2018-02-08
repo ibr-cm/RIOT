@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <mutex.h>
+#include "periph/pm.h"
 
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
@@ -49,7 +50,7 @@ enum {
 	MSG_WAKE = 3
 };
 
-static kernel_pid_t iv_thread_pid;
+static kernel_pid_t iv_thread_pid, sleeping_pid;
 static char iv_thread_stack[THREAD_STACKSIZE_MAIN];
 static mutex_t iv_mutex;
 static struct {
@@ -69,7 +70,6 @@ void _rtt_cb(void *arg)
 	last += TICKS_TO_WAIT;
 	last &= RTT_MAX_VALUE;
 	rtt_set_alarm(last, _rtt_cb, NULL);
-
 	msg_t msg;
 	msg.type = MSG_PERIODIC;
 	msg_send(&msg, iv_thread_pid);
@@ -77,9 +77,11 @@ void _rtt_cb(void *arg)
 
 void _i2c_r_cb(uint8_t n, uint8_t *data)
 {
-	if (n == 1 && data[0] == 'w') {
+	(void) n;
+	if (n == 1) {
 		msg_t msg;
 		msg.type = MSG_I2C_W;
+		msg.content.value = data[0];
 		msg_send(&msg, iv_thread_pid);
 	}
 }
@@ -155,6 +157,14 @@ void _request_i2c_master(void)
 	i2c_release(IV_I2C_DEV);
 }
 
+void _iv_deepsleep(uint8_t t_max)
+{
+	msg_t msg;
+	msg.type = MSG_SLEEP;
+	msg.content.value = t_max;
+	msg_send(&msg, iv_thread_pid);
+}
+
 void *iv_thread(void *arg)
 {
 	(void) arg;
@@ -201,10 +211,13 @@ void *iv_thread(void *arg)
 		case MSG_I2C_W:
 			rtt_init();
 			i2c_stop_slave();
+			i2c_acquire(IV_I2C_DEV);
 			i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+			i2c_release(IV_I2C_DEV);
 			last = TICKS_TO_WAIT;
 			rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 			iv_state.running = IV_ACTIVE;
+			msg_send(&msg, sleeping_pid);
 			break;
 		default:
 			if (iv_state.running == IV_ACTIVE) {
@@ -250,15 +263,19 @@ void idealvolting_wakeup(void)
 void idealvolting_sleep(uint8_t duration)
 {
 	uint8_t valid;
+	msg_t msg;
 	mutex_lock(&iv_mutex);
 	valid = (iv_state.running == IV_ACTIVE && iv_state.table);
 	mutex_unlock(&iv_mutex);
-	if (!valid)
-		return;
-	msg_t msg;
-	msg.type = MSG_SLEEP;
-	msg.content.value = duration;
-	msg_send(&msg, iv_thread_pid);
+	if (valid) {
+		sleeping_pid = thread_getpid();
+		//pm_block(PM_SLEEPMODE_PWR_DOWN);
+		_iv_deepsleep(duration);
+		msg_receive(&msg);
+		//pm_unblock(PM_SLEEPMODE_PWR_DOWN);
+	} else {
+		//TODO: Maybe block for duration seconds?
+	}
 }
 
 void idealvolting_print_status(void)
