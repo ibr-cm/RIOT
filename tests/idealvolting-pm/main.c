@@ -20,15 +20,21 @@
  */
 
 #include <stdint.h>
+#include <util/delay_basic.h>
 #include "idealvolting.h"
-
-extern uint8_t pm_blocker[4];
+#include "periph/uart.h"
+#include "uart_stdio.h"
+#include "periph/pm.h"
 
 int main(void)
 {
+	__builtin_avr_delay_cycles(80000000);
+	__builtin_avr_delay_cycles(80000000);
+	__builtin_avr_delay_cycles(80000000);
+	uart_poweroff(UART_STDIO_DEV);
+	//pm_unblock(PM_INVALID_UART0);
 	while (1) {
-		__builtin_avr_delay_cycles(8000000);
-		idealvolting_sleep(0);
+		idealvolting_sleep(10);
 	}
 	return 0;
 }
