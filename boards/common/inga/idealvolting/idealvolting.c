@@ -61,6 +61,7 @@ static struct {
 	uint8_t table;
 } iv_state;
 static uint8_t swr_detection = 0;
+static uint8_t dozing = 0;
 static volatile uint32_t last;
 
 void _rtt_cb(void *arg)
@@ -73,6 +74,8 @@ void _rtt_cb(void *arg)
 	msg_t msg;
 	msg.type = MSG_PERIODIC;
 	msg_send(&msg, iv_thread_pid);
+	if (dozing)
+		msg_try_send(&msg, sleeping_pid);
 }
 
 void _i2c_r_cb(uint8_t n, uint8_t *data)
@@ -267,15 +270,17 @@ void idealvolting_sleep(uint8_t duration)
 	mutex_lock(&iv_mutex);
 	valid = (iv_state.running == IV_ACTIVE && iv_state.table);
 	mutex_unlock(&iv_mutex);
+	sleeping_pid = thread_getpid();
 	if (valid) {
-		sleeping_pid = thread_getpid();
-		//pm_block(PM_SLEEPMODE_PWR_DOWN);
 		_iv_deepsleep(duration);
 		msg_receive(&msg);
-		//pm_unblock(PM_SLEEPMODE_PWR_DOWN);
-	} else {
-		//TODO: Maybe block for duration seconds?
+		duration = msg.content.value;
 	}
+	dozing = 1;
+	while (duration--)
+		__builtin_avr_delay_cycles(8000000);
+		//msg_receive(&msg);
+	dozing = 0;
 }
 
 void idealvolting_print_status(void)
