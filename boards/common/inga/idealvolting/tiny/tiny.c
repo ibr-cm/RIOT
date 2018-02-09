@@ -145,6 +145,7 @@ void si_master(void)
 	usi_twi_result_t result;
 	while (true) {
 		_delay_ms(1000);
+		TCNT1 = 0;
 		// see if Mega woke up
 		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &this_sleeptime, 1);
 		if (result == USI_TWI_SUCCESS) {
@@ -472,5 +473,11 @@ ISR(TIM1_OVF_vect)
 		}
 		/* If the watchdog is triggered => reset main MCU */
 		reset_mega();
+	} else {
+		puts(REPORT_MASTER ":t");
+		SI_PULL_RESET_LINE();
+		_delay_ms(200);
+		SI_RELEASE_RESET_LINE();
+		startup = SI_STARTUP_DELAY;
 	}
 }
