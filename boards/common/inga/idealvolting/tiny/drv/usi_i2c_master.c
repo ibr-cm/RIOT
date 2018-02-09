@@ -3,14 +3,18 @@
 #include <util/delay.h>
 #include "usi.h"
 
+#define TWI_SLOW_MODE
 #define SYS_CLK 1000.0  // [kHz]
 
 #ifdef TWI_FAST_MODE  // TWI FAST mode timing limits. SCL = 100-400kHz
-	#define T2_TWI    ((SYS_CLK *1300) / 1000000) + 1  // >1,3us
-	#define T4_TWI    ((SYS_CLK * 600) / 1000000) + 1  // >0,6us
+	#define T2_TWI    ((SYS_CLK * 1300) / 1000000) + 1  // >1.3us
+	#define T4_TWI    ((SYS_CLK * 600) / 1000000) + 1  // >0.6us
+#elif defined TWI_SLOW_MODE // Non-standard SLOW mode. SCL >= 20kHz
+	#define T2_TWI    ((SYS_CLK * 23500) / 1000000) + 1  // >32.5us
+	#define T4_TWI    ((SYS_CLK * 20000) / 1000000) + 1  // >20.0us
 #else  // TWI STANDARD mode timing limits. SCL <= 100kHz
-	#define T2_TWI    ((SYS_CLK *4700) / 100000/*0*/) + 1  // >4,7us TODO: why does it have to be slower?
-	#define T4_TWI    ((SYS_CLK *4000) / 100000/*0*/) + 1  // >4,0us
+	#define T2_TWI    ((SYS_CLK * 4700) / 1000000) + 1  // >4.7us
+	#define T4_TWI    ((SYS_CLK * 4000) / 1000000) + 1  // >4.0us
 #endif
 
 uint8_t _i2c_write_byte(uint8_t data);
