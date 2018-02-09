@@ -9,9 +9,9 @@
 #ifdef TWI_FAST_MODE  // TWI FAST mode timing limits. SCL = 100-400kHz
 	#define T2_TWI    ((SYS_CLK * 1300) / 1000000) + 1  // >1.3us
 	#define T4_TWI    ((SYS_CLK * 600) / 1000000) + 1  // >0.6us
-#elif defined TWI_SLOW_MODE // Non-standard SLOW mode. SCL >= 20kHz
-	#define T2_TWI    ((SYS_CLK * 23500) / 1000000) + 1  // >32.5us
-	#define T4_TWI    ((SYS_CLK * 20000) / 1000000) + 1  // >20.0us
+#elif defined TWI_SLOW_MODE // Non-standard SLOW mode. SCL >= 10kHz
+	#define T2_TWI    ((SYS_CLK * 47000) / 1000000) + 1  // >47.0us
+	#define T4_TWI    ((SYS_CLK * 40000) / 1000000) + 1  // >40.0us
 #else  // TWI STANDARD mode timing limits. SCL <= 100kHz
 	#define T2_TWI    ((SYS_CLK * 4700) / 1000000) + 1  // >4.7us
 	#define T4_TWI    ((SYS_CLK * 4000) / 1000000) + 1  // >4.0us
