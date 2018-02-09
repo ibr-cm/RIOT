@@ -1,6 +1,8 @@
 #include "vtable.h"
-#include <avr/eeprom.h>
 #include "math.h"
+#ifdef USE_EEPROM
+#include <avr/eeprom.h>
+#endif
 
 table_entry_t table[VTABLE_SIZE];
 uint8_t current_index;
@@ -10,6 +12,7 @@ uint8_t v_offset = 0;
 
 void init_table(void)
 {
+#ifdef USE_EEPROM
 	if (eeprom_read_byte(0x0000) == 'y') {
 		for (uint8_t i = 0; i < VTABLE_SIZE; i++) {
 			void *entry_ptr = EEPROM_ADDR_TABLE + (i * sizeof(table_entry_t));
@@ -19,7 +22,9 @@ void init_table(void)
 		v_offset = eeprom_read_byte(EEPROM_ADDR_VOFF);
 		for (uint8_t i = 0; i < VTABLE_SIZE; i++)
 			table[i].voltage -= v_offset;
-	} else {
+	} else
+#endif /* USE_EEPROM */
+	{
 		for (uint8_t i = 0; i < VTABLE_SIZE; i++) {
 			table[i].voltage = VTABLE_VALUE_IS_EMPTY;
 			table[i].info = VTABLE_VALUE_IS_EMPTY;
@@ -101,6 +106,7 @@ void prediction(void)
 		table_entries = (uint8_t) n;
 	}
 
+#ifdef USE_EEPROM
 	/* Write characteristic curve to eeprom */
 	for (uint8_t i = 0; i < VTABLE_SIZE; i++) {
 		void *entry_ptr = EEPROM_ADDR_TABLE + (i * sizeof(table_entry_t));
@@ -112,4 +118,5 @@ void prediction(void)
 	   and write the initial voltage offset */
 	eeprom_write_byte(EEPROM_ADDR_AVAIL, 'y');
 	eeprom_write_byte(EEPROM_ADDR_VOFF, 0);
+#endif /* USE_EEPROM */
 }
