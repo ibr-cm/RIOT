@@ -88,6 +88,7 @@ struct table_entry {
 #define ERROR_TIMEOUT                       "t"
 #define ERROR_TEMP                          "T"
 #define ERROR_RESET                         "r"
+#define ERROR_EARLY                         "e"
 
 
 void reset_voltage_level(void);
