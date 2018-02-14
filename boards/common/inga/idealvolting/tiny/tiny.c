@@ -74,6 +74,7 @@ static uint8_t alu_errors = 0;
 static uint8_t rst_errors = 0;
 static uint8_t sent_hello = 0;
 static uint8_t temp_setup = 0;
+static uint8_t early_frames = 0;
 
 ///For deadlock reset
 volatile uint8_t count_overflows = 0;
@@ -136,6 +137,7 @@ void si_init(void)
 
 void si_master(void)
 {
+	uint8_t wake_attempts = 3;
 	puts(REPORT_MASTER ":e");
 	i2c_init_master();
 	if (!temp_setup) {
@@ -162,6 +164,15 @@ void si_master(void)
 			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &this_sleeptime, 1);
 			if (result == USI_TWI_SUCCESS)
 				break;
+			--wake_attempts;
+			if (wake_attempts == 0) {
+				puts(REPORT_MASTER ":e4");
+				SI_PULL_RESET_LINE();
+				_delay_ms(200);
+				SI_RELEASE_RESET_LINE();
+				startup = SI_STARTUP_DELAY;
+				continue;
+			}
 		} else {
 			printf(REPORT_MASTER ":s %u\n", this_sleeptime);
 			this_sleeptime--;
@@ -204,6 +215,7 @@ void si_master(void)
 	cli();
 	i2c_slave_init(SI_I2C_ADDR << 1);
 	TCNT1 = 0;
+	early_frames = 0;
 	sei();
 	req_buffer->rst_disable = 0x00;
 }
@@ -215,6 +227,10 @@ void si_frame_received(void)
 	this_altbyte = req_buffer->alt_byte;
 	/* Reset watchdog*/
 	count_overflows = 0;
+	if (TCNT1 < 6000)
+		++early_frames;
+	else
+		early_frames = 0;
 	/* Readout OSCALL Value from man MCU.
 	 * Get Temperature and add offset due to negative values */
 	fact_default = req_buffer->osccal; //??
@@ -352,6 +368,10 @@ void si_main(void)
 		error = 1;
 		current_index = ((uint8_t) (prv_temperature) >> 1);
 		puts(REPORT_ERROR ":" ERROR_TEMP);
+	}
+	if (early_frames > 3) {
+		error = 1;
+		puts(REPORT_ERROR ":" ERROR_EARLY);
 	}
 
 	if (error)
