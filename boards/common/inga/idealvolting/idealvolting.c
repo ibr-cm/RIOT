@@ -268,7 +268,7 @@ void idealvolting_sleep(uint8_t duration)
 	uint8_t valid;
 	msg_t msg;
 	mutex_lock(&iv_mutex);
-	valid = (iv_state.running == IV_ACTIVE && iv_state.table);
+	valid = (iv_state.table & 3);
 	mutex_unlock(&iv_mutex);
 	sleeping_pid = thread_getpid();
 	if (valid) {
@@ -277,9 +277,15 @@ void idealvolting_sleep(uint8_t duration)
 		duration = msg.content.value;
 	}
 	dozing = 1;
+#ifdef BOARD_REAPER
+	pm_block(PM_SLEEPMODE_PWR_SAVE);
+#endif
 	while (duration--)
-		__builtin_avr_delay_cycles(8000000);
-		//msg_receive(&msg);
+		//__builtin_avr_delay_cycles(8000000);
+		msg_receive(&msg);
+#ifdef BOARD_REAPER
+	pm_unblock(PM_SLEEPMODE_PWR_SAVE);
+#endif
 	dozing = 0;
 }
 

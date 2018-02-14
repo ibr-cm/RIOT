@@ -45,7 +45,7 @@ int8_t get_temp(void)
 	uint8_t data[2];
 	uint16_t adc;
 	int16_t result;
-	int64_t var1, var2, var3;
+	int32_t var1, var2, var3; //int64_t in Bosch reference
 	int32_t t_fine;
 
 	i2c_acquire(IV_I2C_DEV);

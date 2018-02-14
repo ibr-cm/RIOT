@@ -28,11 +28,7 @@
 
 int main(void)
 {
-	__builtin_avr_delay_cycles(80000000);
-	__builtin_avr_delay_cycles(80000000);
-	__builtin_avr_delay_cycles(80000000);
 	uart_poweroff(UART_STDIO_DEV);
-	//pm_unblock(PM_INVALID_UART0);
 	while (1) {
 		idealvolting_sleep(10);
 	}
