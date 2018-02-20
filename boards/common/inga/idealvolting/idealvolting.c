@@ -236,7 +236,6 @@ void *iv_thread(void *arg)
 
 void idealvolting_init(void)
 {
-	(void) iv_thread_stack;
 	iv_state.running = IV_READY;
 
 	mutex_init(&iv_mutex);
