@@ -47,7 +47,7 @@ enum pm_sleep_modes {
 #define PM_INVALID_TIMER1  PM_SLEEPMODE_ADC
 #define PM_INVALID_TIMER2  PM_SLEEPMODE_STANDBY
 #define PM_INVALID_TIMER3  PM_SLEEPMODE_ADC
-#define PM_INVALID_RTC     PM_SLEEPMODE_PWR_DOWN
+#define PM_INVALID_RTC     PM_SLEEPMODE_STANDBY // Will go into pwr save
 
 /**
  * @brief   Available ports on the ATmega1281 family

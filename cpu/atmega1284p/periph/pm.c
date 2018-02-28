@@ -21,7 +21,7 @@
 
 #include "periph/pm.h"
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 #include <avr/sleep.h>
 #include "irq.h"
@@ -29,8 +29,11 @@
 #include "periph_cpu.h"
 #include "pm_layered.h"
 
+uint8_t sleep_mode_count[5] = {0,0,0,0,0};
+
 void pm_set(unsigned mode)
 {
+    sleep_mode_count[mode]++;
     switch(mode) {
         /*
         case PM_SLEEPMODE_EXT_STANDBY :
