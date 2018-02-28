@@ -84,9 +84,7 @@ void rtt_clear_alarm(void) {
 
 void rtt_poweron(void) {
 #ifdef MODULE_PM_LAYERED
-#ifdef PM_INVALID_RTC
-    pm_block(PM_INVALID_RTC);
-#endif
+    pm_block(PM_INVALID_TIMER2);
 #endif
     power_timer2_enable();
 }
@@ -94,49 +92,39 @@ void rtt_poweron(void) {
 void rtt_poweroff(void) {
     power_timer2_disable();
 #ifdef MODULE_PM_LAYERED
-#ifdef PM_INVALID_RTC
-    pm_unblock(PM_INVALID_RTC);
-#endif
+    pm_unblock(PM_INVALID_TIMER2);
 #endif
 }
 
+/*
 ISR(TIMER2_OVF_vect) {
     __enter_isr();
     /// What to do here?
     //puts("TIMER2_OVF");
-    while(1);
     //rtt_next_cb(NULL);
-    if (sched_context_switch_request) {
-        thread_yield();
-    }
     __exit_isr();
 }
+*/
 
 ISR(TIMER2_COMPA_vect) {
     __enter_isr();
     //puts("TIMER2_COMPA");
     //TCNT2 = 0;
-    if(rtt_next_cb != NULL) {
-        rtt_next_cb(NULL);
-    } else {
-        //puts("NULL");
-        while(1);
-    }
-    /*
+    rtt_next_cb(NULL);
     if (sched_context_switch_request) {
         thread_yield();
     }
-    */
     __exit_isr();
 }
 
+/*
 ISR(TIMER2_COMPB_vect) {
     __enter_isr();
     //puts("TIMER2_COMPB");
-    while(1);
     //TCNT2 = 0;
     if (sched_context_switch_request) {
         thread_yield();
     }
     __exit_isr();
 }
+*/
