@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include "cpu.h"
+#include "thread.h"
 
 #ifdef MODULE_PM_LAYERED
 #include "pm_layered.h"
@@ -15,14 +16,16 @@
 
 uint8_t buffer_address, n_tx;
 uint8_t buffer[I2C_SLAVE_MAX_FRAME_SIZE];
+static uint8_t is_blocked;
 i2c_slave_rcb_t _rcb;  // Callback on data receive
-i2c_slave_tcb_t _tcb;  // Callback on data transmit
+i2c_slave_tcb_t _tcb;  // Callback on data 
 
 void i2c_init_slave(uint8_t address, i2c_slave_rcb_t rcb, i2c_slave_tcb_t tcb)
 {
 	power_twi_enable();
 	_rcb = rcb;
 	_tcb = tcb;
+	is_blocked = 0;
 	// load address into TWI address register
 	TWAR = (address << 1);
 	// set the TWCR to enable address matching and enable TWI, clear TWINT, enable TWI interrupt
@@ -32,18 +35,26 @@ void i2c_init_slave(uint8_t address, i2c_slave_rcb_t rcb, i2c_slave_tcb_t tcb)
 void i2c_stop_slave(void)
 {
 	// clear acknowledge and enable bits
+	if (is_blocked) {
+		pm_unblock(PM_INVALID_TWI);
+		is_blocked = 0;
+	}
 	TWCR &= ~((1<<TWEA) | (1<<TWEN));
 	power_twi_disable();
 }
 
 ISR(TWI_vect)
 {
+	__enter_isr();
 	// temporary stores the received data
 	uint8_t data;
 	// own address has been acknowledged
 	switch (TWSR & 0xF8) {
 	case TW_SR_SLA_ACK:
-		pm_block(PM_INVALID_TWI);
+		if (!is_blocked) {
+			pm_block(PM_INVALID_TWI);
+			is_blocked = 1;
+		}
 		buffer_address = 0;
 		// clear TWI interrupt flag, prepare to receive next byte and acknowledge
 		TWCR |= (1 << TWIE) | (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
@@ -70,7 +81,10 @@ ISR(TWI_vect)
 		_rcb(buffer_address, buffer);
 		// prepare TWI to be addressed again
 		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
-		pm_unblock(PM_INVALID_TWI);
+		if (is_blocked) {
+			pm_unblock(PM_INVALID_TWI);
+			is_blocked = 0;
+		}
 		break;
 	case TW_ST_SLA_ACK:
 		pm_block(PM_INVALID_TWI);
@@ -100,4 +114,8 @@ ISR(TWI_vect)
 		// if none of the above apply prepare TWI to be addressed again
 		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
 	}
+	if (sched_context_switch_request) {
+		thread_yield();
+	}
+	__exit_isr();
 }

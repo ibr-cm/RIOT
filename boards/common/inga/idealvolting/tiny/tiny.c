@@ -103,9 +103,9 @@ void si_init(void)
 	/* Reset Voltage to normal level when SI is reset */
 	SI_INIT_RESET_LINE();
 	SI_PULL_RESET_LINE();
-	_delay_ms(100);
+	_delay_ms(300);
 	reset_voltage_level();
-	_delay_ms(100);
+	_delay_ms(300);
 	SI_RELEASE_RESET_LINE();
 
 	sw_uart_init();
@@ -133,6 +133,18 @@ void si_init(void)
 	sei();
 	req_buffer->alt_byte = 0;
 	SI_UNLOCK();
+}
+
+void master_reset_mega(void)
+{
+	uint8_t txb[2] = {VREG_OP, SI_VOLT_REG_RESET};
+	SI_PULL_RESET_LINE();
+	_delay_ms(300);
+	current_voltage -= 5;
+	i2c_write_bytes((VREG_DEV_ADDR_W >> 1), txb, sizeof(txb));
+	_delay_ms(300);
+	SI_RELEASE_RESET_LINE();
+	startup = SI_STARTUP_DELAY;
 }
 
 void si_master(void)
@@ -164,14 +176,12 @@ void si_master(void)
 			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &this_sleeptime, 1);
 			if (result == USI_TWI_SUCCESS)
 				break;
-			--wake_attempts;
 			if (wake_attempts == 0) {
 				puts(REPORT_MASTER ":e4");
-				SI_PULL_RESET_LINE();
-				_delay_ms(200);
-				SI_RELEASE_RESET_LINE();
-				startup = SI_STARTUP_DELAY;
+				master_reset_mega();
 				continue;
+			} else {
+				--wake_attempts;
 			}
 		} else {
 			printf(REPORT_MASTER ":s %u\n", this_sleeptime);
@@ -181,10 +191,7 @@ void si_master(void)
 		result = get_temp(&this_temperature);
 		if (result != USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":e1");
-			SI_PULL_RESET_LINE();
-			_delay_ms(200);
-			SI_RELEASE_RESET_LINE();
-			startup = SI_STARTUP_DELAY;
+			master_reset_mega();
 			continue;
 		}
 		this_temperature += SI_TEMP_OFFSET;
@@ -204,10 +211,7 @@ void si_master(void)
 				break;
 			} else {
 				puts(REPORT_MASTER ":e3");
-				SI_PULL_RESET_LINE();
-				_delay_ms(200);
-				SI_RELEASE_RESET_LINE();
-				startup = SI_STARTUP_DELAY;
+				master_reset_mega();
 			}
 		}
 	};

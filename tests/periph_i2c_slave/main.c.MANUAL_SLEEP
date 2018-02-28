@@ -6,7 +6,6 @@
 #include "thread.h"
 #include "board.h"
 #include "avr/sleep.h"
-#include "periph_cpu.h"
 
 #define MEGA_ADDR 0x2d
 
@@ -16,8 +15,9 @@ void rcb(uint8_t n_received, uint8_t *data_received)
 {
 	(void) n_received;
 	(void) data_received;
-	msg_t msg;
-	msg_send(&msg, main_pid);
+	//msg_t msg;
+	//msg_send(&msg, main_pid);
+	__builtin_avr_delay_cycles(1000000);
 }
 
 uint8_t tcb(uint8_t *txbuffer)
@@ -28,19 +28,24 @@ uint8_t tcb(uint8_t *txbuffer)
 
 int main(void)
 {
-	msg_t msg;
-#ifdef BOARD_REAPER
+	//msg_t msg;
 	LED1_OFF;
 	LED2_OFF;
-#endif
 	main_pid = thread_getpid();
 	uart_poweroff(UART_STDIO_DEV);
 	i2c_init_slave(MEGA_ADDR, rcb, tcb);
 
-	//pm_block(PM_SLEEPMODE_PWR_DOWN);
+	//pm_block(PM_SLEEPMODE_PWR_SAVE);
 	while (1) {
-		msg_receive(&msg);
-		__builtin_avr_delay_cycles(1000000);
+		set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+		sleep_enable();
+		irq_enable();
+		sleep_cpu();
+		sleep_disable();
+		irq_disable();
+		while (1);
+		//msg_receive(&msg);
+		//__builtin_avr_delay_cycles(1000000);
 	}
 
 	return 0;

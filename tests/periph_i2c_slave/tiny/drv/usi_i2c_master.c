@@ -9,8 +9,8 @@
 	#define T2_TWI    ((SYS_CLK *1300) / 1000000) + 1  // >1,3us
 	#define T4_TWI    ((SYS_CLK * 600) / 1000000) + 1  // >0,6us
 #else  // TWI STANDARD mode timing limits. SCL <= 100kHz
-	#define T2_TWI    ((SYS_CLK *4700) / 1000000) + 1  // >4,7us
-	#define T4_TWI    ((SYS_CLK *4000) / 1000000) + 1  // >4,0us
+	#define T2_TWI    ((SYS_CLK *4700) / 10000000) + 1  // >4,7us
+	#define T4_TWI    ((SYS_CLK *4000) / 10000000) + 1  // >4,0us
 #endif
 
 uint8_t _i2c_write_byte(uint8_t data);

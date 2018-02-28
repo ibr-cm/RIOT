@@ -32,12 +32,15 @@ int main(void)
 			if (++txbuffer[i] > 'z')
 				txbuffer[i] = 'a';
 		}
+		/*
 		_delay_ms(1000);
 		error = i2c_read_bytes(MEGA_ADDR, rxbuffer, 3);
 		if (error == USI_TWI_SUCCESS)
 			printf("Data read: %s\n", rxbuffer);
 		else
 			printf("Reading data failed: %u\n", error);
+		*/
+		/*
 		_delay_ms(1000);
 		int8_t tmp;
 		error = i2c_read_regs(TMP_ADDR, 0x00, (uint8_t *) &tmp, 1);
@@ -45,5 +48,6 @@ int main(void)
 			printf("Temperature: %d\n", tmp);
 		else
 			printf("Reading temperature failed: %u\n", error);
+		*/
 	}
 }
