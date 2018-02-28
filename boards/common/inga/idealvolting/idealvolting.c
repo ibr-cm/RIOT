@@ -276,15 +276,21 @@ void idealvolting_sleep(uint8_t duration)
 		duration = msg.content.value;
 	}
 	dozing = 1;
+/*
 #ifdef BOARD_REAPER
 	pm_block(PM_SLEEPMODE_PWR_SAVE);
 #endif
+*/
+	pm_block(PM_SLEEPMODE_ADC);
 	while (duration--)
 		//__builtin_avr_delay_cycles(8000000);
 		msg_receive(&msg);
+	pm_unblock(PM_SLEEPMODE_ADC);
+/*
 #ifdef BOARD_REAPER
 	pm_unblock(PM_SLEEPMODE_PWR_SAVE);
 #endif
+*/
 	dozing = 0;
 }
 

@@ -31,6 +31,8 @@ int main(void)
 	uart_poweroff(UART_STDIO_DEV);
 	while (1) {
 		idealvolting_sleep(10);
+		//volatile uint8_t x = 0;
+		//++x;
 	}
 	return 0;
 }
