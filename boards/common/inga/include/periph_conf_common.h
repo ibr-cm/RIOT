@@ -84,10 +84,22 @@ extern "C" {
 /** @} */
 
 /**
- * INGA L3G4200D adress
+ * INGA L3G4200D configuration
  * @{
  */
 #define L3G4200D_PARAM_ADDR (0x69) /* 0xD2>>1 */
+#define L3G4200D_PARAM_I2C   (0)
+/** @} */
+
+/**
+ * INGA BMP085 configuration
+ * @{
+ */
+#define BMP085_PARAM_ADDR (0x77) /* 0xEE>>1 */
+#define BMP085_PARAM_I2C   (0)
+#define BMP085_PARAMS  {.i2c_dev = BMP085_PARAM_I2C, \
+						.i2c_addr = BMP085_PARAM_ADDR, \
+						.oversampling = BMP180_STANDARD }
 /** @} */
 
 /**
