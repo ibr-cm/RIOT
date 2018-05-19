@@ -27,6 +27,20 @@
 
 #define TEST_FLANK      GPIO_FALLING
 
+/* Interrupt struct for gpio_init_int */
+#if MODULE_CB_MUX
+static volatile gpio_int_t int_entry[4];
+#define INT_ENTRY0 (&int_entry[0])
+#define INT_ENTRY1 (&int_entry[1])
+#define INT_ENTRY2 (&int_entry[2])
+#define INT_ENTRY3 (&int_entry[3])
+#else
+#define INT_ENTRY0 (NULL)
+#define INT_ENTRY1 (NULL)
+#define INT_ENTRY2 (NULL)
+#define INT_ENTRY3 (NULL)
+#endif
+
 #ifdef BTN0_PIN /* assuming that first button is always BTN0 */
 static void cb(void *arg)
 {
@@ -39,28 +53,32 @@ int main(void)
     int cnt = 0;
     /* get the number of available buttons and init interrupt handler */
 #ifdef BTN0_PIN
-    if (gpio_init_int(BTN0_PIN, BTN0_MODE, TEST_FLANK, cb, (void *)cnt) < 0) {
+    if (gpio_init_int(INT_ENTRY0, BTN0_PIN, BTN0_MODE,
+                      TEST_FLANK, cb, (void *)cnt) < 0) {
         puts("[FAILED] init BTN0!");
         return 1;
     }
     ++cnt;
 #endif
 #ifdef BTN1_PIN
-    if (gpio_init_int(BTN1_PIN, BTN1_MODE, TEST_FLANK, cb, (void *)cnt) < 0) {
+    if (gpio_init_int(INT_ENTRY1, BTN1_PIN, BTN1_MODE,
+                      TEST_FLANK, cb, (void *)cnt) < 0) {
         puts("[FAILED] init BTN1!");
         return 1;
     }
     ++cnt;
 #endif
 #ifdef BTN2_PIN
-    if (gpio_init_int(BTN2_PIN, BTN2_MODE, TEST_FLANK, cb, (void *)cnt) < 0) {
+    if (gpio_init_int(INT_ENTRY2, BTN2_PIN, BTN2_MODE,
+                      TEST_FLANK, cb, (void *)cnt) < 0) {
         puts("[FAILED] init BTN2!");
         return 1;
     }
     ++cnt;
 #endif
 #ifdef BTN3_PIN
-    if (gpio_init_int(BTN3_PIN, BTN3_MODE, TEST_FLANK, cb, (void *)cnt) < 0) {
+    if (gpio_init_int(INT_ENTRY3, BTN3_PIN, BTN3_MODE,
+                      TEST_FLANK, cb, (void *)cnt) < 0) {
         puts("[FAILED] init BTN3!");
         return 1;
     }
