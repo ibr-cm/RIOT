@@ -26,6 +26,14 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+/* Interrupt struct for gpio_init_int */
+#if MODULE_CB_MUX
+static volatile gpio_int_t int_entry;
+#define INT_ENTRY (&int_entry)
+#else
+#define INT_ENTRY (NULL)
+#endif
+
 /* Accumulate pulse count */
 static void pulse_counter_trigger(void *arg)
 {
@@ -38,7 +46,8 @@ static void pulse_counter_trigger(void *arg)
 /* Initialize pulse counter */
 int pulse_counter_init(pulse_counter_t *dev, const pulse_counter_params_t *params)
 {
-    if (gpio_init_int(params->gpio, GPIO_IN_PU, params->gpio_flank, pulse_counter_trigger, dev)) {
+    if (gpio_init_int(INT_ENTRY, params->gpio, GPIO_IN_PU,
+                      params->gpio_flank, pulse_counter_trigger, dev)) {
         return -1;
     }
 

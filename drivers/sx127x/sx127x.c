@@ -40,6 +40,20 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
+/* Interrupt struct for gpio_init_int */
+#if MODULE_CB_MUX
+static volatile gpio_int_t int_entry[4];
+#define INT_ENTRY0 (&int_entry[0])
+#define INT_ENTRY1 (&int_entry[1])
+#define INT_ENTRY2 (&int_entry[2])
+#define INT_ENTRY3 (&int_entry[3])
+#else
+#define INT_ENTRY0 (NULL)
+#define INT_ENTRY1 (NULL)
+#define INT_ENTRY2 (NULL)
+#define INT_ENTRY3 (NULL)
+#endif
+
 /* Internal functions */
 static int _init_spi(sx127x_t *dev);
 static int _init_gpios(sx127x_t *dev);
@@ -210,29 +224,29 @@ static void sx127x_on_dio3_isr(void *arg)
 /* Internal event handlers */
 static int _init_gpios(sx127x_t *dev)
 {
-    int res = gpio_init_int(dev->params.dio0_pin, GPIO_IN, GPIO_RISING,
-                            sx127x_on_dio0_isr, dev);
+    int res = gpio_init_int(INT_ENTRY0, dev->params.dio0_pin, GPIO_IN,
+                            GPIO_RISING, sx127x_on_dio0_isr, dev);
     if (res < 0) {
         DEBUG("[sx127x] error: failed to initialize DIO0 pin\n");
         return res;
     }
 
-    res = gpio_init_int(dev->params.dio1_pin, GPIO_IN, GPIO_RISING,
-                         sx127x_on_dio1_isr, dev);
+    res = gpio_init_int(INT_ENTRY1, dev->params.dio1_pin, GPIO_IN,
+                        GPIO_RISING, sx127x_on_dio1_isr, dev);
     if (res < 0) {
         DEBUG("[sx127x] error: failed to initialize DIO1 pin\n");
         return res;
     }
 
-    res = gpio_init_int(dev->params.dio2_pin, GPIO_IN, GPIO_RISING,
-                        sx127x_on_dio2_isr, dev);
+    res = gpio_init_int(INT_ENTRY2, dev->params.dio2_pin, GPIO_IN,
+                        GPIO_RISING, sx127x_on_dio2_isr, dev);
     if (res < 0) {
         DEBUG("[sx127x] error: failed to initialize DIO2 pin\n");
         return res;
     }
 
-    res = gpio_init_int(dev->params.dio3_pin, GPIO_IN, GPIO_RISING,
-                        sx127x_on_dio3_isr, dev);
+    res = gpio_init_int(INT_ENTRY3, dev->params.dio3_pin, GPIO_IN,
+                        GPIO_RISING, sx127x_on_dio3_isr, dev);
     if (res < 0) {
         DEBUG("[sx127x] error: failed to initialize DIO3 pin\n");
         return res;

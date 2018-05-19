@@ -25,6 +25,14 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
+/* Interrupt struct for gpio_init_int */
+#if MODULE_CB_MUX
+static volatile gpio_int_t int_entry;
+#define INT_ENTRY (&int_entry)
+#else
+#define INT_ENTRY (NULL)
+#endif
+
 /**********************************************************************
  * internal API declaration
  **********************************************************************/
@@ -107,5 +115,6 @@ static void pir_callback(void *arg)
 
 static int pir_activate_int(pir_t *dev)
 {
-    return gpio_init_int(dev->gpio_dev, GPIO_IN, GPIO_BOTH, pir_callback, dev);
+    return gpio_init_int(INT_ENTRY, dev->gpio_dev, GPIO_IN,
+                         GPIO_BOTH, pir_callback, dev);
 }
