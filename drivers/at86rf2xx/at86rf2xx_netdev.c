@@ -87,7 +87,7 @@ static int _init(netdev_t *netdev)
     gpio_clear(dev->params.sleep_pin);
     gpio_init(dev->params.reset_pin, GPIO_OUT);
     gpio_set(dev->params.reset_pin);
-    gpio_init_int(INT_ENTRY, dev->params.int_pin, GPIO_IN,
+    gpio_init_int((gpio_int_t*)INT_ENTRY, dev->params.int_pin, GPIO_IN,
                   GPIO_RISING, _irq_handler, dev);
 
     /* reset device to default values and put it into RX state */
