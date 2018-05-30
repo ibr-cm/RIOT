@@ -47,7 +47,7 @@ extern "C" {
  * @name    at86rf233 configuration
  * @{
  */
-#define AT86RF2XX_PARAMS_BOARD {.spi = SPI_DEV(0), \
+#define AT86RF2XX_PARAMS {.spi = SPI_DEV(0), \
                                 .spi_clk = SPI_CLK_5MHZ, \
                                 .cs_pin = GPIO_PIN(PORT_B, 4),\
                                 .int_pin = GPIO_PIN(PORT_D, 6),\
