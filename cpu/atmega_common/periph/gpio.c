@@ -31,6 +31,7 @@
 #include "periph/gpio.h"
 #include "periph_conf.h"
 #include "periph_cpu.h"
+#include "cb_mux.h"
 
 #define GPIO_BASE_PORT_A        (0x20)
 #define GPIO_OFFSET_PORT_H      (0xCB)
@@ -58,6 +59,30 @@
 #endif
 
 static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
+
+#ifdef AVR_USE_PCINT
+/* stores the last state of each port */
+static uint8_t pcint_state[GPIO_PC_INT_NUMOF / 8];
+/* Stores Information for PCINT Handling */
+typedef struct pcintHandler {
+	gpio_t pin;
+	gpio_isr_ctx_t pcint;
+	gpio_flank_t pcint_flank;
+	struct pcintHandler *next;	
+} pcintHandler_t;
+/* Start of Linked List for PCINT Handlers */
+pcintHandler_t *pcintHandlerList = NULL;
+
+gpio_flank_t fallingFlank = GPIO_FALLING;
+gpio_flank_t risingFlank = GPIO_RISING;
+gpio_flank_t bothFlanks = GPIO_BOTH;
+
+/**
+ * @brief first element in list of structures for callback @TP
+ */
+gpio_int_t *gpio_int_list_start = NULL;
+
+#endif
 
 /**
  * @brief     Extract the pin number of the given pin
@@ -145,18 +170,77 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
     return 0;
 }
 
-int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
-                  gpio_cb_t cb, void *arg)
+int gpio_init_int(gpio_int_t *entry, gpio_t pin, gpio_mode_t mode,
+                  gpio_flank_t flank, gpio_cb_t cb, void *arg)
 {
-    int8_t int_num = _int_num(pin);
+    /* FIXME: utilize gpio.h/cb_mux API change */
+    (void)entry;
 
-    if ((mode != GPIO_IN) && (mode != GPIO_IN_PU)) {
-        return -1;
-    }
+    uint8_t pin_num = _pin_num(pin);
 
     /* not a valid interrupt pin */
     if (int_num < 0) {
+	        /* If pin change interrupts are enabled, enable mask and interrupt */
+        #ifdef GPIO_PC_INT_NUMOF
+        gpio_init(pin, mode);
+        cli();
+        switch (_port_num(pin)) {
+            case 0:
+                PCMSK0 |= (1 << pin_num);
+                PCICR |= (1 << PCIE0);
+                break;
+            case 1:
+                PCMSK1 |= (1 << pin_num);
+                PCICR |= (1 << PCIE1);
+                break;
+#ifdef PCIE2
+            case 2:
+                PCMSK2 |= (1 << pin_num);
+                PCICR |= (1 << PCIE2);
+                break;
+#endif
+#ifdef PCIE3
+            case 3:
+                PCMSK3 |= (1 << pin_num);
+                PCICR |= (1 << PCIE3);
+                break;
+#endif
+            default:
+                return -1;
+                break;
+        }
+
+		/* set configuration */	
+		entry->cbid = (cb_mux_cbid_t)pin;
+		entry->cb = (cb_mux_cb_t)cb;
+		entry->arg = arg;
+		if(flank == GPIO_FALLING)
+		{
+			entry->info = (void*)(&fallingFlank);
+		} else if( flank == GPIO_RISING) {
+			entry->info = (void*)(&risingFlank);
+		} else if (flank == GPIO_BOTH) {
+			entry->info = (void*)(&bothFlanks);
+		} else {
+			return -1;
+		}	
+		/* check if Configuration is already set */	
+		gpio_int_t *pcintInfo = NULL;	
+		pcintInfo = cb_mux_find_cbid((cb_mux_t*)(gpio_int_list_start), (cb_mux_cbid_t)pin);
+		if(pcintInfo != NULL)
+		{
+			cb_mux_del((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) pcintInfo);
+		}
+		cb_mux_add((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) entry);
+		pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) )));
+
+
+        /* enable global interrupt flag */
+        sei();
+        return 0;
+        #else /* if no pin change interrupts are used */
         return -1;
+        #endif /* GPIO_PC_INT_NUMOF */
     }
 
     gpio_init(pin, mode);
@@ -236,6 +320,78 @@ void gpio_write(gpio_t pin, int value)
         gpio_clear(pin);
     }
 }
+
+#ifdef GPIO_PC_INT_NUMOF
+/* inline function that is used by the PCINT ISR */
+static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
+{
+	//Find right item
+    uint8_t pin_num = 0;
+    /* calculate changed bits */
+    uint8_t state = _SFR_MEM8(_pin_addr(GPIO_PIN(port_num, 1)));
+    /* get pins that changed */
+    uint8_t change = pcint_state[port_num] ^ state;
+    /* apply mask to change */
+    change &= *mask_reg;
+    /* loop through all changed pins with enabled pcint */
+    while (change > 0) {
+        /* check if this pin is enabled & has changed */
+        if (change & 0x1) {
+            uint8_t pin_mask = (1 << pin_num);
+			/*search in LL for PCINT Handling Information and Store it here*/
+			gpio_int_t *pcintInfo = NULL;	
+			pcintInfo = cb_mux_find_cbid((cb_mux_t*)(gpio_int_list_start), (cb_mux_cbid_t)((uint8_t)GPIO_PIN(port_num, pin_num)));				
+			gpio_flank_t flank = *((gpio_flank_t*)(pcintInfo->info));
+		    /* trigger only on correct flank */
+		    if (flank == GPIO_BOTH || ((state & pin_mask) && flank == GPIO_RISING) || (!(state & pin_mask) && flank == GPIO_FALLING)) {
+		    /* finally execute callback routine */
+		    	__enter_isr();
+				pcintInfo->cb(pcintInfo->arg);
+		        __exit_isr();
+		 	}
+			
+        }
+        change = change >> 1;
+        pin_num++;
+    }
+    /* store current state */
+    pcint_state[port_num] = state;
+}
+
+#ifndef AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+#error gpio.c requires the definition of AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+#endif
+
+/*
+ * PCINT0 is always defined, if GPIO_PC_INT_NUMOF is defined
+ */
+#if PCINT0_vect_num != AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+ISR(PCINT0_vect, ISR_BLOCK) {
+    pcint_handler(0, &PCMSK0);
+}
+#endif /* AVR_CONTEXT_SWAP_INTERRUPT_VECT */
+#if defined(PCINT1_vect)
+#if PCINT1_vect_num != AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+ISR(PCINT1_vect, ISR_BLOCK) {
+    pcint_handler(1, &PCMSK1);
+}
+#endif  /* AVR_CONTEXT_SWAP_INTERRUPT_VECT */
+#endif  /* PCINT1_vect */
+#if defined(PCINT2_vect)
+#if PCINT2_vect_num != AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+ISR(PCINT2_vect, ISR_BLOCK) {
+    pcint_handler(2, &PCMSK2);
+}
+#endif  /* AVR_CONTEXT_SWAP_INTERRUPT_VECT */
+#endif  /* PCINT2_vect */
+#if defined(PCINT3_vect)
+#if PCINT3_vect_num != AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM
+ISR(PCINT3_vect, ISR_BLOCK) {
+    pcint_handler(3, &PCMSK3);
+}
+#endif  /* AVR_CONTEXT_SWAP_INTERRUPT_VECT */
+#endif  /* PCINT3_vect */
+#endif  /* GPIO_PC_INT_NUMOF */
 
 static inline void irq_handler(uint8_t int_num)
 {

@@ -13,6 +13,7 @@ export LINKFLAGS += $(CFLAGS_CPU) $(CFLAGS_DBG) $(CFLAGS_OPT) -static -lgcc -e r
 # export the peripheral drivers to be linked into the final binary
 export USEMODULE += atmega_common_periph
 export USEMODULE += periph_common
+export USEMODULE += cb_mux
 
 # the atmel port uses uart_stdio
 export USEMODULE += uart_stdio
