@@ -32,6 +32,8 @@
 #include "periph_conf.h"
 #include "periph_cpu.h"
 #include "cb_mux.h"
+#include "board.h"
+#include "utlist.h"
 
 #define GPIO_BASE_PORT_A        (0x20)
 #define GPIO_OFFSET_PORT_H      (0xCB)
@@ -56,6 +58,16 @@
 #define GPIO_EXT_INT_NUMOF      (3U)
 #else
 #define GPIO_EXT_INT_NUMOF      (2U)
+#endif
+
+#if defined(PCINT3_vect)
+#define GPIO_PC_INT_NUMOF       (32U)
+#elif defined(PCINT2_vect)
+#define GPIO_PC_INT_NUMOF       (24U)
+#elif defined(PCINT1_vect)
+#define GPIO_PC_INT_NUMOF       (16U)
+#elif defined(PCINT0_vect)
+#define GPIO_PC_INT_NUMOF       (8U)
 #endif
 
 static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
@@ -167,10 +179,11 @@ int gpio_init_int(gpio_int_t *entry, gpio_t pin, gpio_mode_t mode,
     /* FIXME: utilize gpio.h/cb_mux API change */
     (void)entry;
 
-    uint8_t pin_num = _pin_num(pin);
+    int8_t int_num = _int_num(pin);
 
     /* not a valid interrupt pin */
     if (int_num < 0) {
+		uint8_t pin_num = _pin_num(pin);
 	        /* If pin change interrupts are enabled, enable mask and interrupt */
         #ifdef GPIO_PC_INT_NUMOF
         gpio_init(pin, mode);
