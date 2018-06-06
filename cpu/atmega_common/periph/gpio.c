@@ -63,20 +63,11 @@ static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
 #ifdef AVR_USE_PCINT
 /* stores the last state of each port */
 static uint8_t pcint_state[GPIO_PC_INT_NUMOF / 8];
-/* Stores Information for PCINT Handling */
-typedef struct pcintHandler {
-	gpio_t pin;
-	gpio_isr_ctx_t pcint;
-	gpio_flank_t pcint_flank;
-	struct pcintHandler *next;	
-} pcintHandler_t;
-/* Start of Linked List for PCINT Handlers */
-pcintHandler_t *pcintHandlerList = NULL;
 
+/* Needed for config of required flank */ 
 gpio_flank_t fallingFlank = GPIO_FALLING;
 gpio_flank_t risingFlank = GPIO_RISING;
 gpio_flank_t bothFlanks = GPIO_BOTH;
-
 /**
  * @brief first element in list of structures for callback @TP
  */
@@ -229,6 +220,7 @@ int gpio_init_int(gpio_int_t *entry, gpio_t pin, gpio_mode_t mode,
 		pcintInfo = cb_mux_find_cbid((cb_mux_t*)(gpio_int_list_start), (cb_mux_cbid_t)pin);
 		if(pcintInfo != NULL)
 		{
+			/* if configuration is already set, delete it from the Linked List. However, it wont remove the gpio_int_t from the stack */
 			cb_mux_del((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) pcintInfo);
 		}
 		cb_mux_add((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) entry);
