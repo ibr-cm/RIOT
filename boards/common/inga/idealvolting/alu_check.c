@@ -102,5 +102,6 @@ alu_check_alt_result_t alu_check_alt(void)
 		for (j = 0; j < ALU_CHECK_N; ++j)
 			c_f[i] += a_c[((i / (ALU_CHECK_N + 1)) * ALU_CHECK_N) + j] * b_c[(i % (ALU_CHECK_N + 1)) + (j * (ALU_CHECK_N + 1))];
 	}
-	return *((alu_check_alt_result_t *) c_f);
+	alu_check_alt_result_t* res = (alu_check_alt_result_t *) c_f;
+	return *res;
 }
