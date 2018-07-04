@@ -32,9 +32,9 @@ int _idealvolting_handler(int argc, char **argv)
 	if (argc == 1) {
 		printf("Usage: %s \n"
 				"        status\n"
-				"        enable\n"
-				"        disable\n"
-				"        debug on|off\n",
+				"        wakeup\n"
+				"        sleep\n",
+				//"        debug on|off\n", -> warum stimmte das hier nicht??? 
 				argv[0]);
 		return 1;
 	} else if (strcmp("status", argv[1]) == 0) {
