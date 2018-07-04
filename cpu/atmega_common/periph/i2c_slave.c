@@ -90,7 +90,7 @@ ISR(TWI_vect)
 		pm_block(PM_INVALID_TWI);
 		buffer_address = 0;
 		n_tx = _tcb(buffer);
-		__attribute__ ((fallthrough));
+		/* fall through */
 	case TW_ST_DATA_ACK: // device has been addressed to be a transmitter
 		// copy the specified buffer address into the TWDR register for transmission
 		TWDR = buffer[buffer_address];
@@ -109,7 +109,7 @@ ISR(TWI_vect)
 		break;
 	case TW_ST_DATA_NACK:
 		pm_unblock(PM_INVALID_TWI);
-		__attribute__ ((fallthrough));
+		/* fall through */
 	default:
 		// if none of the above apply prepare TWI to be addressed again
 		TWCR |= (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
