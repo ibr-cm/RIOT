@@ -47,19 +47,21 @@ SIGNATURE = {
  */
 void cpu_init(void)
 {
-  wdt_disable();
-  power_all_disable();
-  /*
-  power_spi_disable();
-  power_usart0_disable();
-  power_usart1_disable();
-  power_twi_disable();
-  power_adc_disable();
-  power_timer0_disable();
-  power_timer1_disable();
-  power_timer2_disable();
-  power_timer3_disable();
-  */
+  	/* Set WDT_Reset flag zero and disable wdt. Or else, the watchdog wont stop resetting the MCU after reboot was called.*/
+	MCUSR = 0;
+	wdt_disable();
+	  power_all_disable();
+	  /*
+	  power_spi_disable();
+	  power_usart0_disable();
+	  power_usart1_disable();
+	  power_twi_disable();
+	  power_adc_disable();
+	  power_timer0_disable();
+	  power_timer1_disable();
+	  power_timer2_disable();
+	  power_timer3_disable();
+	  */
 
-  periph_init();
+	  periph_init();
 }

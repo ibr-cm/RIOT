@@ -68,9 +68,6 @@ void init8_ovr(void)
  */
 void reset_handler(void)
 {
-	/* Set WDT_Reset flag zero and disable wdt. Or else, the watchdog wont stop resetting the MCU after reboot was called.*/
-	MCUSR = 0;
-	wdt_disable();
     /* initialize the board and startup the kernel */
     board_init();
     /* startup the kernel */
