@@ -19,9 +19,9 @@ void setup_temp(void)
 	uint8_t cal_buf[5];
 
 	i2c_acquire(IV_I2C_DEV);
-	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, 0xe9, cal_buf, 2);
-	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, 0x8a, cal_buf + 2, 3);
-	i2c_write_reg(IV_I2C_DEV, TMP_ADDR, 0x74, 0b00100001);
+	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, 0xe9, cal_buf, 2, 0x00);
+	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, 0x8a, cal_buf + 2, 3, 0x00);
+	i2c_write_reg(IV_I2C_DEV, TMP_ADDR, 0x74, 0b00100001, 0x00);
 	i2c_release(IV_I2C_DEV);
 
 	calibration.t1 = ((uint16_t) cal_buf[1] << 8) + ((uint16_t) cal_buf[0]);
@@ -49,8 +49,8 @@ int8_t get_temp(void)
 	int32_t t_fine;
 
 	i2c_acquire(IV_I2C_DEV);
-	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, TMP_REG, data, 2);
-	i2c_write_reg(IV_I2C_DEV, TMP_ADDR, 0x74, 0b00100001);
+	i2c_read_regs(IV_I2C_DEV, TMP_ADDR, TMP_REG, data, 2, 0x00);
+	i2c_write_reg(IV_I2C_DEV, TMP_ADDR, 0x74, 0b00100001, 0x00);
 	i2c_release(IV_I2C_DEV);
 
 	adc = (data[0] << 8) | data[1];

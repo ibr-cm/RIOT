@@ -30,6 +30,10 @@
 #include "periph/i2c.h"
 #include "periph_conf.h"
 
+#ifdef MODULE_PM_LAYERED
+#include "pm_layered.h"
+#endif
+
 #define ENABLE_DEBUG      (0)
 #include "debug.h"
 
@@ -48,6 +52,7 @@ static int _start(uint8_t address, uint8_t rw_flag);
 static int _write(const uint8_t *data, int length);
 static void _stop(void);
 static void i2c_poweron(i2c_t dev);
+static void i2c_poweroff(i2c_t dev);
 
 static mutex_t locks[I2C_NUMOF];
 
@@ -120,7 +125,7 @@ void i2c_init(i2c_t dev)
     I2C_PORT_REG |= (I2C_PIN_MASK);
 
     /* enable I2C clock */
-    //i2c_poweron(dev);
+    i2c_poweron(dev);
 
     /* disable device */
     TWCR &= ~(1 << TWEN);

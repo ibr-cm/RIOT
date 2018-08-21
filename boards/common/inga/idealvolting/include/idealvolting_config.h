@@ -51,7 +51,7 @@
  */
 #define IV_I2C_DEV    I2C_DEV(0)       /*< I2C device */
 #define SI_I2C_ADDR   0x2d             /*< Address of the Tiny */
-#define SI_I2C_SPEED  I2C_SPEED_NORMAL /*< I2C Speed */
+#define SI_I2C_SPEED  I2C_SPEED_NORMAL /*< I2C Speed. Due to interface update, the I2C Speed is now configured in the board Header! */
 #define MEGA_SL_ADDR_SLEEP 0x2e /*< Address of the Mega when sleeping */
 #define MEGA_SL_ADDR_READY 0x2f /*< Address of the Mega when ready to become master*/
 #if defined BOARD_INGA_BLUE

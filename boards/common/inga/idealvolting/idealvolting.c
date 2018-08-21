@@ -115,7 +115,7 @@ void wait_si_ready(void)
 	i2c_acquire(IV_I2C_DEV);
 	do {
 		i2c_read_reg(IV_I2C_DEV, SI_I2C_ADDR,
-				SI_REG_LOCK, &si_state);
+				SI_REG_LOCK, &si_state, 0x00);
 		// Todo: Wait before trying again?
 	} while (si_state != SI_READY);
 	i2c_release(IV_I2C_DEV);
@@ -131,12 +131,12 @@ void send_si_req(iv_req_t *req, iv_res_t *res)
 
 	i2c_acquire(IV_I2C_DEV);
 	i2c_write_regs(IV_I2C_DEV, SI_I2C_ADDR,
-			SI_REG_REQUEST, req, sizeof(*req));
+			SI_REG_REQUEST, req, sizeof(*req), 0x00);
 	i2c_release(IV_I2C_DEV);
 	wait_si_ready();
 	i2c_acquire(IV_I2C_DEV);
 	i2c_read_regs(IV_I2C_DEV, SI_I2C_ADDR,
-			SI_REG_REPLY, res, sizeof(*res));
+			SI_REG_REPLY, res, sizeof(*res), 0x00);
 	i2c_release(IV_I2C_DEV);
 
 	req->rst_flags = 0x00;
@@ -156,7 +156,7 @@ void _request_i2c_master(void)
 	} while (msg.type != MSG_I2C_W);
 	i2c_stop_slave();
 	i2c_acquire(IV_I2C_DEV);
-	i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+	i2c_init(IV_I2C_DEV);
 	i2c_release(IV_I2C_DEV);
 }
 
@@ -215,7 +215,7 @@ void *iv_thread(void *arg)
 			rtt_init();
 			i2c_stop_slave();
 			i2c_acquire(IV_I2C_DEV);
-			i2c_init_master(IV_I2C_DEV, SI_I2C_SPEED);
+			i2c_init(IV_I2C_DEV);
 			i2c_release(IV_I2C_DEV);
 			last = TICKS_TO_WAIT;
 			rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
