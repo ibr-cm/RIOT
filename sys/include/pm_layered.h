@@ -36,6 +36,7 @@
 
 #include "assert.h"
 #include "periph_cpu.h"
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +49,8 @@ extern "C" {
 #ifndef PROVIDES_PM_SET_LOWEST
 #define PROVIDES_PM_SET_LOWEST
 #endif
+
+extern uint8_t last_sleep_mode;
 
 /**
  * @brief   Block a power mode
