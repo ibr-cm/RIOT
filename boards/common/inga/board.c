@@ -58,9 +58,11 @@ void board_init(void)
 
 #ifdef LED1_PIN
     gpio_init(LED1_PIN, GPIO_OUT);
+	LED1_OFF;
 #endif
 #ifdef LED2_PIN
     gpio_init(LED2_PIN, GPIO_OUT);
+	LED2_OFF;
 #endif
 
     irq_enable();

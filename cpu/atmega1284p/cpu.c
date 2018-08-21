@@ -50,7 +50,7 @@ void cpu_init(void)
   	/* Set WDT_Reset flag zero and disable wdt. Or else, the watchdog wont stop resetting the MCU after reboot was called.*/
 	MCUSR = 0;
 	wdt_disable();
-	  power_all_disable();
+	power_all_disable();
 	  /*
 	  power_spi_disable();
 	  power_usart0_disable();
