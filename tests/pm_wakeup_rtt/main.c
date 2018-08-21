@@ -19,6 +19,8 @@
  * @}
  */
 
+#define ETERNALLOOP
+#define MAXCYCLES 6
 #include <stdio.h>
 #include "thread.h"
 
@@ -37,24 +39,20 @@ static volatile int cnt = 0;
 /* Counter if the sleep state was ok */
 static volatile int cnt_ok = 0;
 
-uint8_t last_sleep_mode_list[8];
+uint8_t last_sleep_mode_list[MAXCYCLES];
 
 static void cb(void *arg)
 {
 	(void)arg;
-	if(cnt < 6)
+	if(cnt < MAXCYCLES)
 	{
 		last_sleep_mode_list[cnt] = last_sleep_mode;
 	}
     cnt++;
-    //puts("cb\n");
     /* Switch uart state every RTT alarm */
     if(uart_enabled) {
         /* power off uart and set flag */
-		if(cnt < 6)
-		{
-        	uart_poweroff(0);
-		}
+        uart_poweroff(0);
         uart_enabled = !uart_enabled;
     } else {
         /* power on uart and set flag */
@@ -74,7 +72,11 @@ static void cb(void *arg)
 int main(void)
 {
     rtt_init();  //the implementation of rtt is still the same
+	#ifndef ETERNALLOOP
     puts("[Start] Test should take about 12 seconds.");
+	#else
+	puts("[START] Test takes forever.");
+	#endif
     while(1) {
         rtt_set_alarm(1, cb, NULL);
         if(uart_enabled) {
@@ -85,11 +87,16 @@ int main(void)
             if(cnt > 6) {		
                 puts("[Succeed]");
 				puts("Here are all sleep modes used");
-				for(int k = 0; k < 6; k++)
+				for(int k = 0; k < MAXCYCLES; k++)
 				{
 					printf("Mode: %d\n", last_sleep_mode_list[k]);
+					last_sleep_mode_list[k] = 0;
 				}
+				#ifndef ETERNALLOOP
                 break;
+				#else 
+				cnt = 0;
+				#endif
             }
             printf("after sleep: cnt=%d sleep_state_ok=%d\n", cnt, cnt_ok);
         }
