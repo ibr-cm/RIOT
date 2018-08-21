@@ -62,6 +62,7 @@ extern "C" {
 #define I2C_0_EN            (1)
 #define I2C_0_SCL           GPIO_PIN(PORT_C, 0)
 #define I2C_0_SDA           GPIO_PIN(PORT_C, 1)
+#define I2C_BUS_SPEED 		I2C_SPEED_NORMAL
 /** @} */
 
 /**
