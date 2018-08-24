@@ -154,6 +154,9 @@ static gnrc_pktsnip_t *_recv(gnrc_netif_t *netif)
 
             hdr->lqi = rx_info.lqi;
             hdr->rssi = rx_info.rssi;
+            if (rx_info.crc_valid) {
+                hdr->flags |= GNRC_NETIF_HDR_FLAGS_CRC_VALID;
+            }
             hdr->if_pid = thread_getpid();
             dev->driver->get(dev, NETOPT_PROTO, &pkt->type, sizeof(pkt->type));
 #if ENABLE_DEBUG
