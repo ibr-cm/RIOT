@@ -39,7 +39,7 @@
 
 enum {
 	IV_ACTIVE,
-	IV_SLEEPING,
+	IV_SLEEPING, //does this means that iv is running or not?
 	IV_READY
 };
 
@@ -64,6 +64,14 @@ static uint8_t swr_detection = 0;
 static uint8_t dozing = 0;
 static volatile uint32_t last;
 
+
+/**
+ * @brief   cb for the rtt
+ *
+ * Is used by the rtt as callback. Sends a message to the iv thread and the sleeping thread every second
+ *
+ * @param[in] arg       not used
+ */
 void _rtt_cb(void *arg)
 {
 	(void) arg;
@@ -123,7 +131,7 @@ void wait_si_ready(void)
 
 void send_si_req(iv_req_t *req, iv_res_t *res)
 {
-	req->checksum = MCU_CHECK();
+	req->checksum = MCU_CHECK(); //is alu_check() from alu_check.h . This define is set in idealvolting_config.h
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
 	req->osccal = OSCCAL;
@@ -167,6 +175,13 @@ void _iv_deepsleep(uint8_t t_max)
 	msg.content.value = t_max;
 	msg_send(&msg, iv_thread_pid);
 }
+
+/**
+ * @brief   Managing Thread for idealvolting
+ *
+ * This thread manages idealvolting
+ *
+ */
 
 void *iv_thread(void *arg)
 {
@@ -234,6 +249,13 @@ void *iv_thread(void *arg)
 	return NULL;
 }
 
+/**
+ * @brief   starts idealvolting
+ *
+ * This starts up idealvolting. It will create the Thread necessary to manage the communication between the MCU and the ATTiny on the reaper
+ *
+ */
+
 void idealvolting_init(void)
 {
 	iv_state.running = IV_READY;
@@ -249,6 +271,13 @@ void idealvolting_init(void)
 	rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 }
 
+/**
+ * @brief   wakes up idealvolting
+ *
+ * This reactivates idealvolting if it is currently not active
+ *
+ */
+
 void idealvolting_wakeup(void)
 {
 	uint8_t valid;
@@ -262,6 +291,13 @@ void idealvolting_wakeup(void)
 	msg_send(&msg, iv_thread_pid);
 }
 
+/**
+ * @brief   sets idealvolting to sleep
+ *
+ * This deactivates idealvolting for a given period of seconds. Idealvolting is started automatically at the beginning of the iv Thread. Deactivation of iv may result in increased power consumption.
+ *
+ * @param[in] duration      seconds idealvolting should sleep
+ */
 void idealvolting_sleep(uint8_t duration)
 {
 	uint8_t valid;
@@ -276,24 +312,35 @@ void idealvolting_sleep(uint8_t duration)
 		duration = msg.content.value;
 	}
 	dozing = 1;
-/*
-#ifdef BOARD_REAPER
-	pm_block(PM_SLEEPMODE_PWR_SAVE);
-#endif
-*/
+	/*
+	#ifdef BOARD_REAPER
+		pm_block(PM_SLEEPMODE_PWR_SAVE);
+	#endif
+	*/
+	#if 0
 	pm_block(PM_SLEEPMODE_ADC);
-	while (duration--)
+	#endif
+	while (duration--) {
 		//__builtin_avr_delay_cycles(8000000);
 		msg_receive(&msg);
+ 	}
+	#if 0
 	pm_unblock(PM_SLEEPMODE_ADC);
-/*
-#ifdef BOARD_REAPER
-	pm_unblock(PM_SLEEPMODE_PWR_SAVE);
-#endif
-*/
+	#endif
+	/*
+	#ifdef BOARD_REAPER
+		pm_unblock(PM_SLEEPMODE_PWR_SAVE);
+	#endif
+	*/
 	dozing = 0;
 }
 
+/**
+ * @brief  	prints information about idealvolting
+ *
+ * Prints some information about idealvolting.
+ *
+ */
 void idealvolting_print_status(void)
 {
 	mutex_lock(&iv_mutex);
