@@ -58,24 +58,67 @@
 #define GPIO_EXT_INT_NUMOF      (2U)
 #endif
 
+#define GPIO_PC_INT_NUMOF (8)
+
 #ifdef GPIO_PC_INT_NUMOF
 /* stores the last state of each port */
 static uint8_t pcint_state[GPIO_PC_INT_NUMOF / 8];
 
-/* Needed for config of required flank */ 
-gpio_flank_t fallingFlank = GPIO_FALLING;
-gpio_flank_t risingFlank = GPIO_RISING;
-gpio_flank_t bothFlanks = GPIO_BOTH;
+
 /**
  * @brief stores all cb and args for all defined cb. 
  */
 
 typedef struct {
     gpio_cb_t cb;           /**< interrupt callback */
-    gpiot_t pin;            /**< pin which the interrupt is for */
-    flank_t flank;          /**< type of interrupt the flank should be triggered on */
+    gpio_t pin;             /**< pin which the interrupt is for */
+    gpio_flank_t flank;     /**< type of interrupt the flank should be triggered on */
     void *arg;              /**< optional argument */
 } gpio_isr_ctx_pcint_t;
+
+/*
+
+
+
+// board.h:
+#define GPIO_LIST { GPIO_PIN(PORT_D, 6) };
+
+// gpio.c:;
+static gpio_isr_ctx_pcint_t pcint_config[ sizeof(mapping) / sizeof(gpio_t) ];
+
+int8_t lookup[4*8] = {-1};
+// 0: A0 1: A1 ...
+// 8: B0 9: B1 ...
+// ...
+
+// 3*8+6 -> 30
+// lookup[30] -> 0
+
+gpio_init_int:
+
+lookup[ pin ] = position_of( pin, mapping );
+
+gpio_t mapping[] = GPIO_LIST;
+uint8_t mapping_size = sizeof(mapping) / sizeof(gpio_t);
+for(uint8_t i=0;i<mapping_size;i++) {
+    if(pin == mapping[i]) {
+        /// Found GPIO_PIN definition, and position
+        lookup[ pin ] = i;
+        pcint_config[ i ] =  {.flank = ..., .arg = ..., .cb = ...};
+        break;
+    }
+}
+
+ISR CB:
+
+gpio_t c = lookup[ pin ];
+if(c >= 0){
+    pcint_config[  ].cb( ... );
+}
+
+
+
+*/
 
 static gpio_isr_ctx_pcint_t pcint_config[GPIO_PC_INT_NUMOF];
 uint8_t currentEntry = 0;
@@ -223,11 +266,12 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
     if (int_num < 0) {
 	    /* If pin change interrupts are enabled, enable mask and interrupt */
         #ifdef GPIO_PC_INT_NUMOF
+        printf("INIT PCINT %d %d \n", pin>>4, pin & 0x0F);
         uint8_t pin_num = _pin_num(pin);
         /* check if pcint handler is already set */
         for(int i = 0; i < currentEntry;i++)
         {
-            if(pcint_config[i].pin == pin)
+            if((gpio_t)(pcint_config[i].pin) == pin)
             {
                 /* config already exists. Do stuff */
                 break;
@@ -268,18 +312,6 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
         pcint_config[currentEntry].cb = cb;
         /*store arg*/
         pcint_config[currentEntry].arg = arg;
-        /**
-		if(flank == GPIO_FALLING)
-		{
-			entry->info = (void*)(&fallingFlank);
-		} else if( flank == GPIO_RISING) {
-			entry->info = (void*)(&risingFlank);
-		} else if (flank == GPIO_BOTH) {
-			entry->info = (void*)(&bothFlanks);
-		} else {
-			return -1;
-		}	
-        **/
 		/* check if Configuration is already set */	
         /**
 		gpio_int_t *pcintInfo = NULL;	
@@ -379,7 +411,7 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
 			/*search in LL for PCINT Handling Information and Store it here*/
             for(int i = 0; i < GPIO_PC_INT_NUMOF;i++)
             {
-                if(pcint_config[i].pin == pin)
+                if((gpio_t)(pcint_config[i].pin) == pin)
                 {
                     /* config already exists. Do stuff */
                     pinconfig = pcint_config[i];
