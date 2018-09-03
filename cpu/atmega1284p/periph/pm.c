@@ -31,6 +31,7 @@
 
 void pm_set(unsigned mode)
 {
+    DEBUG("Entering power Mode: %d\n", mode);
     switch(mode) {
         /*
         case PM_SLEEPMODE_EXT_STANDBY :
