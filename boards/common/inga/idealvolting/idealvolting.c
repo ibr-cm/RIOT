@@ -86,6 +86,15 @@ void _rtt_cb(void *arg)
 		msg_try_send(&msg, sleeping_pid);
 }
 
+/**
+ * @brief   cb for recieving data in i2c slave mode
+ *
+ * is called, if you recieve data while in slave mode
+ *
+ * @param[in] n		??
+ * @param[in] data	revieved data
+ */
+
 void _i2c_r_cb(uint8_t n, uint8_t *data)
 {
 	(void) n;
@@ -96,6 +105,14 @@ void _i2c_r_cb(uint8_t n, uint8_t *data)
 		msg_send(&msg, iv_thread_pid);
 	}
 }
+
+/**
+ * @brief   cb for sending data in i2c slave mode
+ *
+ * is called, if you send data while in slave mode
+ *
+ * @param[in] data	you send
+ */
 
 uint8_t _i2c_t_cb(uint8_t *data)
 {
@@ -129,9 +146,18 @@ void wait_si_ready(void)
 	i2c_release(IV_I2C_DEV);
 }
 
-void send_si_req(iv_req_t *req, iv_res_t *res)
+/**
+ * @brief   Sends Data to the attiny and recieves answer
+ *
+ * Sends the required data to the attiny and recieves information from it. 
+ *
+ * @param[in] req       data for attiny
+ * @param[out] res      data from attiny
+ */
+
+void send_si_req(iv_req_t *req, iv_res_t *res) //si = secure instance = attiny
 {
-	req->checksum = MCU_CHECK(); //is alu_check() from alu_check.h . This define is set in idealvolting_config.h
+	req->checksum = MCU_CHECK(); /* is alu_check() from alu_check.h . This define is set in idealvolting_config.h */
 	req->temperature = get_temp();
 	iv_state.temp = req->temperature;
 	req->osccal = OSCCAL;
@@ -240,6 +266,7 @@ void *iv_thread(void *arg)
 		default:
 			if (iv_state.running == IV_ACTIVE) {
 				send_si_req(&req, &res);
+				//printf("setting voltage to: %d\n", res.voltage);
 				VSCALE_SET_REG(&vscale_dev, res.voltage);
 			}
 		}
@@ -297,6 +324,8 @@ void idealvolting_wakeup(void)
  * This deactivates idealvolting for a given period of seconds. Idealvolting is started automatically at the beginning of the iv Thread. Deactivation of iv may result in increased power consumption.
  *
  * @param[in] duration      seconds idealvolting should sleep
+ * 
+ * Should return the recieved message if it is not from iv
  */
 void idealvolting_sleep(uint8_t duration)
 {
@@ -308,8 +337,15 @@ void idealvolting_sleep(uint8_t duration)
 	sleeping_pid = thread_getpid();
 	if (valid) {
 		_iv_deepsleep(duration);
-		msg_receive(&msg);
-		duration = msg.content.value;
+		msg_receive(&msg);	/* This should be send by the iv_thread */
+		if(msg.sender_pid == iv_thread_pid)
+		{
+			duration = msg.content.value;
+		} else {
+			printf("IV was woken up due to a recieved message!\n");
+			idealvolting_wakeup(); /* wakeup iv */
+			return (void)msg;
+		}
 	}
 	dozing = 1;
 	/*
@@ -323,6 +359,13 @@ void idealvolting_sleep(uint8_t duration)
 	while (duration--) {
 		//__builtin_avr_delay_cycles(8000000);
 		msg_receive(&msg);
+		if(msg.type != MSG_PERIODIC)
+		{
+			/*message is not from iv! wakeup iv!*/
+			printf("IV waswoken up due to a recieved message!\n");
+			idealvolting_wakeup();
+			return (void)msg;
+		} 		
  	}
 	#if 0
 	pm_unblock(PM_SLEEPMODE_ADC);
