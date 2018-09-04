@@ -41,6 +41,8 @@ extern "C" {
 #define BTN0_MODE           GPIO_IN
 /** @} */
 
+#define GPIO_LIST { GPIO_PIN(PORT_D, 6) };
+
 #ifdef __cplusplus
 }
 #endif
