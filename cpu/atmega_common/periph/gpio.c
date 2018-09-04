@@ -28,9 +28,13 @@
 #include <avr/interrupt.h>
 
 #include "cpu.h"
+#include "board.h"
 #include "periph/gpio.h"
 #include "periph_conf.h"
 #include "periph_cpu.h"
+
+#define ENABLE_DEBUG    (1)
+#include "debug.h"
 
 #define GPIO_BASE_PORT_A        (0x20)
 #define GPIO_OFFSET_PORT_H      (0xCB)
@@ -57,17 +61,27 @@
 #define GPIO_EXT_INT_NUMOF      (2U)
 #endif
 
-#define GPIO_PC_INT_NUMOF (8)
+/* detect ammount of possible PCINTS */
+#ifdef AVR_USE_PCINT
+#if defined(PCINT3_vect)
+#define GPIO_PC_INT_NUMOF       (32U)
+#elif defined(PCINT2_vect)
+#define GPIO_PC_INT_NUMOF       (24U)
+#elif defined(PCINT1_vect)
+#define GPIO_PC_INT_NUMOF       (16U)
+#elif defined(PCINT0_vect)
+#define GPIO_PC_INT_NUMOF       (8U)
+#endif
+#endif
 
 #ifdef GPIO_PC_INT_NUMOF
+
 /* stores the last state of each port */
 static uint8_t pcint_state[GPIO_PC_INT_NUMOF / 8];
 
-
 /**
- * @brief stores all cb and args for all defined cb. 
+ * @brief stores all cb and args for all defined pcint. 
  */
-
 typedef struct {
     gpio_cb_t cb;           /**< interrupt callback */
     gpio_t pin;             /**< pin which the interrupt is for */
@@ -75,27 +89,35 @@ typedef struct {
     void *arg;              /**< optional argument */
 } gpio_isr_ctx_pcint_t;
 
+static gpio_t mapping[] = GPIO_LIST; //wäre schöner wenn das nicht die ganze Zeit im Speicher liegt....
+
+static gpio_isr_ctx_pcint_t pcint_config[ sizeof(mapping) / sizeof(gpio_t) ]; 
+
+// Erstmal im 8 Bit modus.
+int8_t lookup[4*8] = {  -1, -1, -1, -1, -1, -1, -1, -1,
+                        -1, -1, -1, -1, -1, -1, -1, -1,  
+                        -1, -1, -1, -1, -1, -1, -1, -1,
+                        -1, -1, -1, -1, -1, -1, -1, -1,};
+
 /*
-
-
-
-// board.h:
-#define GPIO_LIST { GPIO_PIN(PORT_D, 6) };
-
 // gpio.c:;
-static gpio_isr_ctx_pcint_t pcint_config[ sizeof(mapping) / sizeof(gpio_t) ];
+static gpiot_t mapping[] = GPIO_LIST; //wäre schöner wenn das nicht die ganze Zeit im Speicher liegt....
+static gpio_isr_ctx_pcint_t pcint_config[ sizeof(mapping) / sizeof(gpio_t) ]; 
 
-int8_t lookup[4*8] = {-1};
+// Erstmal im 8 Bit modus.
+int8_t lookup[4*8] = {  -1, -1, -1, -1, -1, -1, -1, -1,
+                        -1, -1, -1, -1, -1, -1, -1, -1,  
+                        -1, -1, -1, -1, -1, -1, -1, -1,
+                        -1, -1, -1, -1, -1, -1, -1, -1,};  // wenn weniger als 16 PCINTS benötigt werden, kann der Speicherplatz reduziert werden. -> Dann braucht es nur 4 Bit pro Eintrag -> vorher alle auf -1 setzen
 // 0: A0 1: A1 ...
 // 8: B0 9: B1 ...
 // ...
-
 // 3*8+6 -> 30
-// lookup[30] -> 0
+// lookup[30] -> 0  //sagt an wo der Eintrag des PINS in PCINT_CONFIG liegt
 
 gpio_init_int:
 
-lookup[ pin ] = position_of( pin, mapping );
+lookup[ pin ] = position_of( pin, mapping );  //in lookup wird eingetragen wo in pcint_config sich die PCINT Infos des PINS verstecken
 
 gpio_t mapping[] = GPIO_LIST;
 uint8_t mapping_size = sizeof(mapping) / sizeof(gpio_t);
@@ -114,13 +136,7 @@ gpio_t c = lookup[ pin ];
 if(c >= 0){
     pcint_config[  ].cb( ... );
 }
-
-
-
 */
-
-static gpio_isr_ctx_pcint_t pcint_config[GPIO_PC_INT_NUMOF];
-uint8_t currentEntry = 0;
 #endif
 
 
@@ -226,16 +242,26 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
     if (int_num < 0) {
 	    /* If pin change interrupts are enabled, enable mask and interrupt */
         #ifdef GPIO_PC_INT_NUMOF
-        printf("INIT PCINT %d %d \n", pin>>4, pin & 0x0F);
+        DEBUG("Init pin %d %d as PCINT\n", pin>>4, pin & 0x0F);
+        uint8_t broke = 0;
         uint8_t pin_num = _pin_num(pin);
-        /* check if pcint handler is already set */
-        for(int i = 0; i < currentEntry;i++)
-        {
-            if((gpio_t)(pcint_config[i].pin) == pin)
-            {
-                /* config already exists. Do stuff */
+        uint8_t mapping_size = sizeof(mapping) / sizeof(gpio_t);
+        for(uint8_t i=0 ; i<mapping_size ; i++) {
+            if((gpio_t)pin == (gpio_t)mapping[i]) {
+                /// Found GPIO_PIN definition, and position
+                lookup[ _port_num(pin) * 8 + pin_num ] = i;
+                /* overwrite old information */
+                pcint_config[i].pin     = pin;
+                pcint_config[i].flank   = flank;
+                pcint_config[i].arg     = arg;
+                pcint_config[i].cb      = cb;
+                broke = 1; 
                 break;
             }
+        }
+        if(broke != 1)
+        {
+            return -1;
         }
         gpio_init(pin, mode);
         cli();
@@ -265,30 +291,7 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 return -1;
                 break;
         }
-        pcint_config[currentEntry].pin = pin;
-        /*store flank values*/
-        pcint_config[currentEntry].flank = flank;
-        /*store callback*/
-        pcint_config[currentEntry].cb = cb;
-        /*store arg*/
-        pcint_config[currentEntry].arg = arg;
-		/* check if Configuration is already set */	
-        /**
-		gpio_int_t *pcintInfo = NULL;	
-		pcintInfo = cb_mux_find_cbid((cb_mux_t*)(gpio_int_list_start), (cb_mux_cbid_t)pin);
-		if(pcintInfo != NULL)
-		{
-			// if configuration is already set, delete it from the Linked List. However, it wont remove the gpio_int_t from the stack 
-			cb_mux_del((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) pcintInfo);
-		}
-		cb_mux_add((cb_mux_t**)(&gpio_int_list_start), (cb_mux_t*) entry);
-        **/
-        pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) )));
-        currentEntry++;
-        if(currentEntry == GPIO_PC_INT_NUMOF)
-        {
-            /**End of Array reached. Do stuff!**/
-        }
+        pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) ))); //Out of Array pretty fast
         return 0;
         #endif
         return -1;
@@ -399,29 +402,17 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
     while (change > 0) {
         /* check if this pin is enabled & has changed */
         if (change & 0x1) {
-            uint8_t found = 0;
-            uint8_t pin_mask = (1 << pin_num);
-            gpio_t pin = GPIO_PIN(port_num, pin_num);
-            gpio_isr_ctx_pcint_t pinconfig;
-			/*search in LL for PCINT Handling Information and Store it here*/
-            for(int i = 0; i < GPIO_PC_INT_NUMOF;i++)
-            {
-                if((gpio_t)(pcint_config[i].pin) == pin)
-                {
-                    /* config already exists. Do stuff */
-                    pinconfig = pcint_config[i];
-                    found = 1;
-                    break;
-                }
-            }	
-			if(found == 1)
-            {
-                gpio_flank_t flank = pinconfig.flank;
-                /* trigger only on correct flank */
+            int8_t c = lookup[ port_num * 8 + pin_num ];
+            if(c >= 0){
+                uint8_t pin_mask = (1 << pin_num);
+                gpio_flank_t flank = pcint_config[c].flank;
                 if (flank == GPIO_BOTH || ((state & pin_mask) && flank == GPIO_RISING) || (!(state & pin_mask) && flank == GPIO_FALLING)) {
-                /* finally execute callback routine */
+                    /* finally execute callback routine */
                     __enter_isr();
-                    pinconfig.cb(pinconfig.arg);
+                    DEBUG("Entering Callback for pin: %d %d \n", port_num, pin_num);
+                    DEBUG("Lookup position: %d\n",c);
+                    DEBUG("Callback point: %d\n",pcint_config[c].cb);
+                    pcint_config[c].cb(pcint_config[c].arg);
                     __exit_isr();
                 }
             }
