@@ -291,7 +291,7 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 return -1;
                 break;
         }
-        pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) ))); //Out of Array pretty fast
+        pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) )));
         sei();
         return 0;
         #endif
@@ -391,6 +391,7 @@ static inline void irq_handler(uint8_t int_num)
 /* inline function that is used by the PCINT ISR */
 static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
 {
+    __enter_isr();
 	//Find right item
     uint8_t pin_num = 0;
     /* calculate changed bits */
@@ -399,6 +400,7 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
     uint8_t change = pcint_state[port_num] ^ state;
     /* apply mask to change */
     change &= *mask_reg;
+    printf("CHANGE: %d\n", change);
     /* loop through all changed pins with enabled pcint */
     while (change > 0) {
         /* check if this pin is enabled & has changed */
@@ -409,12 +411,14 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
                 gpio_flank_t flank = pcint_config[c].flank;
                 if (flank == GPIO_BOTH || ((state & pin_mask) && flank == GPIO_RISING) || (!(state & pin_mask) && flank == GPIO_FALLING)) {
                     /* finally execute callback routine */
-                    __enter_isr();
                     DEBUG("Entering Callback for pin: %d %d \n", port_num, pin_num);
                     DEBUG("Lookup position: %d\n",c);
                     DEBUG("Callback point: %d\n",pcint_config[c].cb);
+                    printf("Entering ISR\n");
                     pcint_config[c].cb(pcint_config[c].arg);
-                    __exit_isr();
+                    printf("LEAVING ISR\n");
+                } else {
+                    printf("Flank missmatch\n");
                 }
             }
 			
@@ -424,6 +428,8 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
     }
     /* store current state */
     pcint_state[port_num] = state;
+    printf("PCINT DONE. PORT: %d\n", port_num);
+    __exit_isr();
 }
 /*
  * PCINT0 is always defined, if GPIO_PC_INT_NUMOF is defined
