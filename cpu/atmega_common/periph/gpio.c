@@ -33,7 +33,7 @@
 #include "periph_conf.h"
 #include "periph_cpu.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define GPIO_BASE_PORT_A        (0x20)
@@ -292,6 +292,7 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 break;
         }
         pcint_state[_port_num(pin)] = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) ))); //Out of Array pretty fast
+        sei();
         return 0;
         #endif
         return -1;
