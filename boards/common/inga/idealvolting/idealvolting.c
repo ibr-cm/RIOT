@@ -33,6 +33,9 @@
 #include <mutex.h>
 #include "periph/pm.h"
 
+#define ENABLE_DEBUG 	(0)
+#include "debug.h"
+
 #define IV_THREAD_PRIORITY 0
 #define IV_THREAD_FLAGS THREAD_CREATE_STACKTEST
 #define TICKS_TO_WAIT (1 * RTT_FREQUENCY)
@@ -261,12 +264,12 @@ void *iv_thread(void *arg)
 			last = TICKS_TO_WAIT;
 			rtt_set_alarm(TICKS_TO_WAIT, _rtt_cb, NULL);
 			iv_state.running = IV_ACTIVE;
-			msg_send(&msg, sleeping_pid);
+			msg_send(&msg, sleeping_pid); //send message to sleeping thread to tell him how long we are gonna sleep
 			break;
 		default:
 			if (iv_state.running == IV_ACTIVE) {
 				send_si_req(&req, &res);
-				//printf("setting voltage to: %d\n", res.voltage);
+				DEBUG("setting voltage to: %d\n", res.voltage);
 				VSCALE_SET_REG(&vscale_dev, res.voltage);
 			}
 		}
@@ -329,6 +332,8 @@ void idealvolting_wakeup(void)
  */
 void idealvolting_sleep(uint8_t duration)
 {
+	DEBUG("Idealvolting is sleeping for %d seconds.\n", duration);
+
 	uint8_t valid;
 	msg_t msg;
 	mutex_lock(&iv_mutex);
@@ -342,7 +347,7 @@ void idealvolting_sleep(uint8_t duration)
 		{
 			duration = msg.content.value;
 		} else {
-			printf("IV was woken up due to a recieved message!\n");
+			DEBUG("IV was woken up due to a recieved message!\n");
 			idealvolting_wakeup(); /* wakeup iv */
 			return (void)msg;
 		}
@@ -362,7 +367,7 @@ void idealvolting_sleep(uint8_t duration)
 		if(msg.type != MSG_PERIODIC)
 		{
 			/*message is not from iv! wakeup iv!*/
-			printf("IV waswoken up due to a recieved message!\n");
+			DEBUG("IV was woken up due to a recieved message!\n");
 			idealvolting_wakeup();
 			return (void)msg;
 		} 		
@@ -376,6 +381,7 @@ void idealvolting_sleep(uint8_t duration)
 	#endif
 	*/
 	dozing = 0;
+	DEBUG("IV Sleep End\n");
 }
 
 /**

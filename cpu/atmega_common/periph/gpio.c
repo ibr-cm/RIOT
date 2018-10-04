@@ -400,7 +400,7 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
     uint8_t change = pcint_state[port_num] ^ state;
     /* apply mask to change */
     change &= *mask_reg;
-    printf("CHANGE: %d\n", change);
+    DEBUG("CHANGE: %d\n", change);
     /* loop through all changed pins with enabled pcint */
     while (change > 0) {
         /* check if this pin is enabled & has changed */
@@ -414,11 +414,11 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
                     DEBUG("Entering Callback for pin: %d %d \n", port_num, pin_num);
                     DEBUG("Lookup position: %d\n",c);
                     DEBUG("Callback point: %d\n",pcint_config[c].cb);
-                    printf("Entering ISR\n");
+                    DEBUG("Entering ISR\n");
                     pcint_config[c].cb(pcint_config[c].arg);
-                    printf("LEAVING ISR\n");
+                    DEBUG("LEAVING ISR\n");
                 } else {
-                    printf("Flank missmatch\n");
+                    DEBUG("Flank missmatch\n");
                 }
             }
 			
@@ -428,7 +428,7 @@ static inline void pcint_handler(uint8_t port_num, volatile uint8_t *mask_reg)
     }
     /* store current state */
     pcint_state[port_num] = state;
-    printf("PCINT DONE. PORT: %d\n", port_num);
+    DEBUG("PCINT DONE. PORT: %d\n", port_num);
     __exit_isr();
 }
 /*
