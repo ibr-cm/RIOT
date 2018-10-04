@@ -54,7 +54,7 @@ extern "C" {
                                 .sleep_pin = GPIO_PIN(PORT_B, 3),\
                                 .reset_pin = GPIO_PIN(PORT_B, 1)}
 /** @} */
-
+#define GPIO_LIST   {GPIO_PIN(PORT_D, 6)}
 /**
  * @name    xtimer configuration values
  * @{
