@@ -33,7 +33,7 @@
 #include <mutex.h>
 #include "periph/pm.h"
 
-#define ENABLE_DEBUG 	(0)
+#define ENABLE_DEBUG 	(1)
 #include "debug.h"
 
 #define IV_THREAD_PRIORITY 0
@@ -66,6 +66,9 @@ static struct {
 static uint8_t swr_detection = 0;
 static uint8_t dozing = 0;
 static volatile uint32_t last;
+
+msg_t lastRecievedMessage;
+uint8_t wokenUpByMessage;
 
 
 /**
@@ -335,21 +338,21 @@ void idealvolting_sleep(uint8_t duration)
 	DEBUG("Idealvolting is sleeping for %d seconds.\n", duration);
 
 	uint8_t valid;
-	msg_t msg;
 	mutex_lock(&iv_mutex);
 	valid = (iv_state.table & 3);
 	mutex_unlock(&iv_mutex);
 	sleeping_pid = thread_getpid();
 	if (valid) {
 		_iv_deepsleep(duration);
-		msg_receive(&msg);	/* This should be send by the iv_thread */
-		if(msg.sender_pid == iv_thread_pid)
+		msg_receive(&lastRecievedMessage);	/* This should be send by the iv_thread */
+		if(lastRecievedMessage.sender_pid == iv_thread_pid)
 		{
-			duration = msg.content.value;
+			duration = lastRecievedMessage.content.value;
 		} else {
 			DEBUG("IV was woken up due to a recieved message!\n");
+			wokenUpByMessage = 1;
 			idealvolting_wakeup(); /* wakeup iv */
-			return (void)msg;
+			return ;
 		}
 	}
 	dozing = 1;
@@ -363,15 +366,17 @@ void idealvolting_sleep(uint8_t duration)
 	#endif
 	while (duration--) {
 		//__builtin_avr_delay_cycles(8000000);
-		msg_receive(&msg);
-		if(msg.type != MSG_PERIODIC)
+		msg_receive(&lastRecievedMessage);
+		if(lastRecievedMessage.type != MSG_PERIODIC)
 		{
 			/*message is not from iv! wakeup iv!*/
 			DEBUG("IV was woken up due to a recieved message!\n");
 			idealvolting_wakeup();
-			return (void)msg;
+			wokenUpByMessage = 1;
+			return ;
 		} 		
  	}
+	wokenUpByMessage = 0;
 	#if 0
 	pm_unblock(PM_SLEEPMODE_ADC);
 	#endif

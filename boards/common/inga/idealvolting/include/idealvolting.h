@@ -24,6 +24,10 @@
 #define IDEALVOLTING_H
 
 #include <stdint.h>
+#include "msg.h"
+
+extern uint8_t wokenUpByMessage;
+extern msg_t lastRecievedMessage;
 
 #define DEBUG_PRINT_REQ(req) printf("Request Frame:\n" \
 		"    temperature = %u\n" \
@@ -52,6 +56,8 @@
 		(res)->debug & (1 << 3) ? "TABLE_ENTRY ": "", \
 		(res)->debug & (1 << 4) ? "HARDWARE_RESET ": "", \
 		(res)->debug & (1 << 5) ? "SOFTWARE_RESET ": "");
+
+
 
 /**
  * Initialize IdealVolting
