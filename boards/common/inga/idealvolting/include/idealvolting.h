@@ -26,8 +26,6 @@
 #include <stdint.h>
 #include "msg.h"
 
-extern uint8_t wokenUpByMessage;
-extern msg_t lastRecievedMessage;
 
 #define DEBUG_PRINT_REQ(req) printf("Request Frame:\n" \
 		"    temperature = %u\n" \
@@ -75,7 +73,7 @@ void idealvolting_wakeup(void);
 /**
  * Disable Idealvolting
  */
-void idealvolting_sleep(uint8_t duration);
+void* idealvolting_sleep(uint8_t duration);
 
 /**
  * Print information about the current state of IdealVolting

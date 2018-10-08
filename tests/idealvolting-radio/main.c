@@ -103,11 +103,12 @@ int main(void)
 	while(1)
 	{
 		idealvolting_print_status();
-        idealvolting_sleep(10); //wie bekomme ich die ampfangene Nachricht wieder aus dem IV sleep raus?
-        if(wokenUpByMessage == 1)
+        void *returnVal = idealvolting_sleep(10);
+        if(returnVal != NULL)
         {
             puts("IV was woken up!");
-            _dump(lastRecievedMessage.content.ptr);
+            msg_t *msg = (msg_t*)returnVal; 
+            _dump((*(msg)).content.ptr);
         } 
 
 	}

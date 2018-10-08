@@ -67,9 +67,7 @@ static uint8_t swr_detection = 0;
 static uint8_t dozing = 0;
 static volatile uint32_t last;
 
-msg_t lastRecievedMessage;
-uint8_t wokenUpByMessage;
-
+msg_t recievedMessage;
 
 /**
  * @brief   cb for the rtt
@@ -333,9 +331,9 @@ void idealvolting_wakeup(void)
  * 
  * Should return the recieved message if it is not from iv
  */
-void idealvolting_sleep(uint8_t duration)
+void* idealvolting_sleep(uint8_t duration)
 {
-	DEBUG("Idealvolting is sleeping for %d seconds.\n", duration);
+	DEBUG("[DEBUG] Idealvolting is sleeping for %d seconds.\n", duration);
 
 	uint8_t valid;
 	mutex_lock(&iv_mutex);
@@ -343,16 +341,17 @@ void idealvolting_sleep(uint8_t duration)
 	mutex_unlock(&iv_mutex);
 	sleeping_pid = thread_getpid();
 	if (valid) {
+		DEBUG("[DEBUG] valid bit set.\n");
 		_iv_deepsleep(duration);
-		msg_receive(&lastRecievedMessage);	/* This should be send by the iv_thread */
-		if(lastRecievedMessage.sender_pid == iv_thread_pid)
+		msg_receive(&recievedMessage);	/* This should be send by the iv_thread */
+		if(recievedMessage.sender_pid == iv_thread_pid)
 		{
-			duration = lastRecievedMessage.content.value;
+			duration = recievedMessage.content.value;
+			DEBUG("[DEBUG] Duration was set to %d seconds.\n", duration);
 		} else {
-			DEBUG("IV was woken up due to a recieved message!\n");
-			wokenUpByMessage = 1;
+			DEBUG("[DEBUG] IV was woken up due to a recieved message!\n");
 			idealvolting_wakeup(); /* wakeup iv */
-			return ;
+			return &recievedMessage;
 		}
 	}
 	dozing = 1;
@@ -366,17 +365,15 @@ void idealvolting_sleep(uint8_t duration)
 	#endif
 	while (duration--) {
 		//__builtin_avr_delay_cycles(8000000);
-		msg_receive(&lastRecievedMessage);
-		if(lastRecievedMessage.type != MSG_PERIODIC)
+		msg_receive(&recievedMessage);
+		if(recievedMessage.type != MSG_PERIODIC)
 		{
 			/*message is not from iv! wakeup iv!*/
-			DEBUG("IV was woken up due to a recieved message!\n");
+			DEBUG("[DEBUG] IV was woken up due to a recieved message!\n");
 			idealvolting_wakeup();
-			wokenUpByMessage = 1;
-			return ;
+			return &recievedMessage;
 		} 		
  	}
-	wokenUpByMessage = 0;
 	#if 0
 	pm_unblock(PM_SLEEPMODE_ADC);
 	#endif
@@ -386,7 +383,8 @@ void idealvolting_sleep(uint8_t duration)
 	#endif
 	*/
 	dozing = 0;
-	DEBUG("IV Sleep End\n");
+	DEBUG("[DEBUG] IV Sleep End\n");
+	return NULL;
 }
 
 /**
