@@ -154,6 +154,7 @@ ISR( USI_START_VECTOR ) {
 
 //################################################### ISR( USI_OVERFLOW_VECTOR )
 
+/*is activated once 8 Bit are transmitted or recieved*/
 ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when waiting for a new Start Condition.
 {
 	uint8_t data = 0;
@@ -161,18 +162,16 @@ ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when w
 //###### Address mode: check address and send ACK (and next USI_SLAVE_SEND_DATA) if OK, else reset USI
 	case USI_SLAVE_CHECK_ADDRESS:
 		if (USIDR == 0 || (USIDR & ~1) == slaveAddress) // If adress is either 0 or own address
-				{
+		{
 			if (USIDR & 0x01) {
 				overflowState = USI_SLAVE_SEND_DATA;// Master Write Data Mode - Slave transmit
 			} else {
 				overflowState = USI_SLAVE_REQUEST_DATA;	// Master Read Data Mode - Slave receive
 				buffer_adr = 0xFF; // Buffer position undefined
 			} // end if
-			SET_USI_TO_SEND_ACK()
-			;
+			SET_USI_TO_SEND_ACK();
 		} else {
-			SET_USI_TO_TWI_START_CONDITION_MODE()
-			;
+			SET_USI_TO_TWI_START_CONDITION_MODE();
 		}
 		break;
 
@@ -182,15 +181,14 @@ ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when w
 		// else reset USI
 	case USI_SLAVE_CHECK_REPLY_FROM_SEND_DATA:
 		if (USIDR ) {
-			SET_USI_TO_TWI_START_CONDITION_MODE()
-			;	// If NACK, the master does not want more data
+			SET_USI_TO_TWI_START_CONDITION_MODE();	// If NACK, the master does not want more data
 			return;
 		}
 
 		// From here we just drop straight into USI_SLAVE_SEND_DATA if the master sent an ACK
 	case USI_SLAVE_SEND_DATA:
 		if (buffer_adr == 0xFF) // No buffer position given, set buffer address to 0
-				{
+		{
 			buffer_adr = 0;
 		}
 		USIDR = txbuffer[buffer_adr]; 	// Send data byte
@@ -198,8 +196,7 @@ ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when w
 		buffer_adr++; 				// Increment buffer address for next byte
 
 		overflowState = USI_SLAVE_REQUEST_REPLY_FROM_SEND_DATA;
-		SET_USI_TO_SEND_DATA( )
-		;
+		SET_USI_TO_SEND_DATA( );
 		break;
 
 		// Set USI to sample reply from master
@@ -212,21 +209,20 @@ ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when w
 
 //######################################## Master Read Data Mode - Slave receive
 
-		// Set USI to sample data from master,
-		// Next USI_SLAVE_GET_DATA_AND_SEND_ACK
+	// Set USI to sample data from master,
+	// Next USI_SLAVE_GET_DATA_AND_SEND_ACK
 	case USI_SLAVE_REQUEST_DATA:
 		overflowState = USI_SLAVE_GET_DATA_AND_SEND_ACK;
-		SET_USI_TO_READ_DATA( )
-		;
+		SET_USI_TO_READ_DATA( );
 		break;
 
-		// Copy data from USIDR and send ACK
-		// Next USI_SLAVE_REQUEST_DATA
+	// Copy data from USIDR and send ACK
+	// Next USI_SLAVE_REQUEST_DATA
 	case USI_SLAVE_GET_DATA_AND_SEND_ACK:
 		data = USIDR; 					// Read data received
-		if (buffer_adr == 0xFF) 		// First access, read buffer position
-				{
-			if (data <= buffer_size)	// Check if address within buffer size
+		if (buffer_adr == 0xFF) 		// First access, read buffer position (buffer_addr is set 0xFF on start condition)
+		{
+			if (data <= buffer_size)	// Check if address within buffer size (first byte recieved is the register the data should be written to)
 			{
 				buffer_adr = data; 		// Set position as received
 			} else {
@@ -238,8 +234,7 @@ ISR( USI_OVERFLOW_VECTOR )// Handles all the communication. Only disabled when w
 			buffer_adr++; 	// Increment buffer address for next write access
 		}
 		overflowState = USI_SLAVE_REQUEST_DATA;	// Next USI_SLAVE_REQUEST_DATA
-		SET_USI_TO_SEND_ACK( )
-		;
+		SET_USI_TO_SEND_ACK( );
 		break;
 
 	}	// End switch

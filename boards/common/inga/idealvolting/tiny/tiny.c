@@ -53,8 +53,8 @@
 #include "drv/sw_uart.h"
 #include "drv/temp.h"
 
-static iv_req_t *req_buffer = (iv_req_t *) rxbuffer;
-static uint8_t *lock_buffer = (uint8_t *) txbuffer;
+static iv_req_t *req_buffer = (iv_req_t *) rxbuffer; //the recieved data is stored in the rx_buffer (=req_buffer)
+static uint8_t *lock_buffer = (uint8_t *) txbuffer;	//the data the tiny is sending is stored in tx_buffer (=res_buffer)
 static iv_res_t *res_buffer = (iv_res_t *) (txbuffer + 1);
 
 uint8_t this_altbyte = 0;
@@ -67,7 +67,7 @@ static uint8_t error;
 static uint8_t startup, current_voltage, iteration;
 static uint16_t delta_t = 55050;
 static uint8_t state, next_state;
-static uint8_t master = 0;
+static uint8_t master = 0; /* 1 if the tiny is the I2C master*/
 
 /* Debug counter */
 static uint8_t alu_errors = 0;
@@ -77,7 +77,7 @@ static uint8_t temp_setup = 0;
 static uint8_t early_frames = 0;
 
 ///For deadlock reset
-volatile uint8_t count_overflows = 0;
+volatile uint8_t count_overflows = 0; /*increased if counter overflows, reset if frame is recieved*/
 static uint8_t fact_default;
 
 /* FUNCTION DECLARARTIONS */
@@ -147,11 +147,15 @@ void master_reset_mega(void)
 	startup = SI_STARTUP_DELAY;
 }
 
+/** 
+ * Check out the mega, wake it up, set voltage and go back to beeing the slave
+ * */
+
 void si_master(void)
 {
 	uint8_t wake_attempts = 3;
 	puts(REPORT_MASTER ":e");
-	i2c_init_master();
+	i2c_init_master(); /*make the SI the I2C master*/
 	if (!temp_setup) {
 		setup_temp();
 		temp_setup = 1;
@@ -178,13 +182,13 @@ void si_master(void)
 				break;
 			if (wake_attempts == 0) {
 				puts(REPORT_MASTER ":e4");
-				master_reset_mega();
+				master_reset_mega(); /*if mega hasnt replied after 3 tries, use HW reset*/
 				continue;
 			} else {
 				--wake_attempts;
 			}
 		} else {
-			printf(REPORT_MASTER ":s %u\n", this_sleeptime);
+			printf(REPORT_MASTER ":s %u\n", this_sleeptime); /*sleeptime is not over yet*/
 			this_sleeptime--;
 		}
 		// if temperature changed adapt voltage
@@ -207,7 +211,7 @@ void si_master(void)
 		} else {
 			puts(REPORT_MASTER ":e2");
 			result = i2c_write_bytes(MEGA_SL_ADDR_SLEEP, &this_sleeptime, 1);
-			if (result == USI_TWI_SUCCESS) {
+			if (result == USI_TWI_SUCCESS) { /*if mega is not replying, use HW reset*/
 				break;
 			} else {
 				puts(REPORT_MASTER ":e3");
@@ -217,13 +221,17 @@ void si_master(void)
 	};
 	puts(REPORT_MASTER ":l");
 	cli();
-	i2c_slave_init(SI_I2C_ADDR << 1);
+	i2c_slave_init(SI_I2C_ADDR << 1); /*make the si the I2C slave*/
 	TCNT1 = 0;
 	early_frames = 0;
 	sei();
 	req_buffer->rst_disable = 0x00;
 }
 
+/**
+ * reacts to a recieved frame
+ * 
+ * */
 void si_frame_received(void)
 {
 	/* Lock SI and copy current alternating byte */
@@ -258,6 +266,9 @@ void approach_voltage(uint8_t value)
 		current_voltage = value;
 }
 
+/** check if startup is done. if it is, switch to SI_MAIN.
+ * put answer for mega into the answer frame 
+ * */
 void si_transient(void)
 {
 	/* After startup the system is in transient state.
@@ -398,14 +409,19 @@ void si_main(void)
 				table_entries);
 }
 
+/**
+ * 	main function of tiny.
+ * 
+ * */
+
 int main(void)
 {
-	state = SI_INIT;
+	state = SI_INIT; //Beginning state
 	while (1) {
 		if (master) {
 			si_master();
 			master = 0;
-			this_altbyte = req_buffer->alt_byte;
+			this_altbyte = req_buffer->alt_byte; /* save alt_byte of the last recieved message*/
 		}
 		switch (state) {
 		case SI_INIT:
@@ -414,16 +430,26 @@ int main(void)
 			next_state = SI_TRANSIENT;
 			break;
 		case SI_IDLE:
+			/* does the atmega want to sleep */
 			if (req_buffer->rst_disable == 0xFF) {
 				this_sleeptime = req_buffer->rst_flags;
 				SI_REPLY_DEBUG_RESET();
 				master = 1;
 				break;
 			}
+
+			/*sleep here in IDLE Mode*/
+			//MCUCR &= ~(1 << SM1 || 1 << SM0); /* set MODE to idle */
+			//MCUCR |= (1 << SE); /* set SLEEP ENABLE */
+			//sleep_cpu(); /* start SLEEP */
+			//MCUCR &= ~(1 << SE); /* clear sleep enable */
+
+			/*check if a new frame was recieved*/
 			if (req_buffer->alt_byte != this_altbyte)
 				si_frame_received();
 			break;
-		case SI_TRANSIENT:
+			/*waits until frame is recieved. I2C slave mode is handled by interrupts.*/
+		case SI_TRANSIENT: /* transient, because you are between main and idle*/
 			si_transient();
 			if (!sent_hello) {
 				sent_hello = 1;
