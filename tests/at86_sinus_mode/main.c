@@ -23,9 +23,10 @@ int main(void)
 {
     /* Params are stored in at86rf2xx_params.h */
     at86rf2xx_setup(&myRadio, &at86rf2xx_params[0]);
+    xtimer_sleep(10);
+    puts("wait done");
     //gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, buttonPressHandler, NULL);
     thread_create(sinus_thread_stack, sizeof(sinus_thread_stack), THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST, at86rf2xx_cw_mode, NULL, "sinus_thread");
-    //thread_create(sinus_thread_stack, sizeof(sinus_thread_stack), THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST, at86rf2xx_cw_mode, NULL, "sinus_thread");
     /*activate test mode on button press*/
 }
 
@@ -65,7 +66,7 @@ void *at86rf2xx_cw_mode(void *arg)
     at86rf2xx_reg_write(&myRadio, 0x04, 0x00);
     at86rf2xx_reg_write(&myRadio, 0x02, 0x03);
     at86rf2xx_reg_write(&myRadio, 0x03, 0x01);
-    at86rf2xx_reg_write(&myRadio, 0x08, 0x33);
+    at86rf2xx_reg_write(&myRadio, 0x08, 0x33); /*Set Channel 19*/
     at86rf2xx_reg_write(&myRadio, 0x05, 0x00);
 
     /*check Register Value (verify TRX State OFF)*/
@@ -122,8 +123,8 @@ void *at86rf2xx_cw_mode(void *arg)
     }
     */
     at86rf2xx_reg_write(&myRadio, 0x02, 0x02);
-
-    while(!cancelLoop)
+    puts("Entering Loopz");
+    while(1)
     {
 
     }
