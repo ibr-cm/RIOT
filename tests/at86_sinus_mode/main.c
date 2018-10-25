@@ -27,7 +27,7 @@ int main(void)
     at86rf2xx_setup(&myRadio, &at86rf2xx_params[0]);
 
     gpio_set(LED0_PIN);
-    board_antenna_config(RFCTL_ANTENNA_EXT); /* set antenna to extern  */
+    board_antenna_config(RFCTL_ANTENNA_EXT); /* set antenna to extern (for samr21-xpro only) */
 
     puts("wait done");
     //gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, buttonPressHandler, NULL); /*activate test mode on button press*/
