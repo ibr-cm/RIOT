@@ -10,6 +10,8 @@
 #include "thread.h"
 #include "xtimer.h"
 
+#include "periph/gpio.h"
+
 void *at86rf2xx_cw_mode(void *arg);
 void buttonPressHandler(void *arg);
 
@@ -23,11 +25,14 @@ int main(void)
 {
     /* Params are stored in at86rf2xx_params.h */
     at86rf2xx_setup(&myRadio, &at86rf2xx_params[0]);
-    xtimer_sleep(10);
+
+    gpio_set(LED0_PIN);
+    board_antenna_config(RFCTL_ANTENNA_EXT); /* set antenna to extern  */
+
     puts("wait done");
-    //gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, buttonPressHandler, NULL);
+    //gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, buttonPressHandler, NULL); /*activate test mode on button press*/
     thread_create(sinus_thread_stack, sizeof(sinus_thread_stack), THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST, at86rf2xx_cw_mode, NULL, "sinus_thread");
-    /*activate test mode on button press*/
+    
 }
 
 void buttonPressHandler(void *arg)
@@ -56,15 +61,14 @@ void *at86rf2xx_cw_mode(void *arg)
     {
         puts("I dont care about args!");
     }
-    puts("Resetting Hardware");
-    /*reset Radio, sleep is included into reset function!*/
-    at86rf2xx_hardware_reset(&myRadio);      
-
+    puts("Init");
+    /*init Radio*/
+    myRadio.netdev.netdev.driver->init((netdev_t *)(&myRadio));
+    /* set Regs */
     puts("Setting Regs");
-    /*set Regs*/
     at86rf2xx_reg_write(&myRadio, 0x0E, 0x01);  
     at86rf2xx_reg_write(&myRadio, 0x04, 0x00);
-    at86rf2xx_reg_write(&myRadio, 0x02, 0x03);
+    at86rf2xx_set_state(&myRadio, AT86RF2XX_STATE_FORCE_TRX_OFF); //at86rf2xx_reg_write(&myRadio, 0x02, 0x03); /*Set state to TRX_OFF*/
     at86rf2xx_reg_write(&myRadio, 0x03, 0x01);
     at86rf2xx_reg_write(&myRadio, 0x08, 0x33); /*Set Channel 19*/
     at86rf2xx_reg_write(&myRadio, 0x05, 0x00);
@@ -101,8 +105,9 @@ void *at86rf2xx_cw_mode(void *arg)
     at86rf2xx_reg_write(&myRadio, 0x1C, 0x46);
     at86rf2xx_reg_write(&myRadio, 0x02, 0x09); /*Enable PLL_ON state*/
 
-    xtimer_usleep(1000);
-    puts("Checking IRQ");
+    //xtimer_usleep(1000);
+    /* ignore IRQ */
+    //puts("Checking IRQ");
     /*
     for(uint8_t i = 20; i > 0; i--)
     {
