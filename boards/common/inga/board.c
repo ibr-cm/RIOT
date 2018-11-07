@@ -20,7 +20,7 @@
 
 #include "cpu.h"
 #include "board.h"
-#include "uart_stdio.h"
+#include "stdio_uart.h"
 #include "avr/io.h"
 
 static int uart_putchar(char c, FILE *stream);
@@ -38,7 +38,7 @@ void board_init(void)
     cpu_init();
 
     /* initialize STDIO over UART */
-    uart_stdio_init();
+    stdio_init();
     stdout = &uart_stdout;
     stdin = &uart_stdin;
     puts("\f");
@@ -64,7 +64,7 @@ void board_init(void)
 static int uart_putchar(char c, FILE *stream)
 {
     (void) stream;
-    uart_stdio_write(&c, 1);
+    stdio_write(&c, 1);
     return 0;
 }
 
@@ -72,6 +72,6 @@ static int uart_getchar(FILE *stream)
 {
     (void) stream;
     char c;
-    uart_stdio_read(&c, 1);
+    stdio_read(&c, 1);
     return (int)c;
 }
