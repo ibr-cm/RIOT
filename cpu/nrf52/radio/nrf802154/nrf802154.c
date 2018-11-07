@@ -252,6 +252,7 @@ static int _send(netdev_t *dev,  const iolist_t *iolist)
     for (; iolist; iolist = iolist->iol_next) {
         if ((IEEE802154_FCS_LEN + len + iolist->iol_len) > (IEEE802154_FRAME_LEN_MAX)) {
             DEBUG("[nrf802154] send: unable to do so, packet is too large!\n");
+            mutex_unlock(&txlock);
             return -EOVERFLOW;
         }
         memcpy(&txbuf[len + 1], iolist->iol_base, iolist->iol_len);
@@ -372,28 +373,42 @@ static int _set(netdev_t *dev, netopt_t opt,
 
 void isr_radio(void)
 {
-    NRF_RADIO->EVENTS_END = 0;
+    /* Clear flag */
+    if (NRF_RADIO->EVENTS_END) {
+        NRF_RADIO->EVENTS_END = 0;
 
-    /* did we just send or receive something? */
-    if (NRF_RADIO->STATE == RADIO_STATE_STATE_RxIdle) {
-        /* only process packet if event callback is set and CRC is valid */
-        if ((nrf802154_dev.netdev.event_callback) &&
-            (NRF_RADIO->CRCSTATUS == 1) &&
-            (netdev_ieee802154_dst_filter(&nrf802154_dev, &rxbuf[1]) == 0)) {
-            _state |= 1 << NETDEV_EVENT_RX_COMPLETE;
+        /* did we just send or receive something? */
+        uint8_t state = (uint8_t)NRF_RADIO->STATE;
+        switch(state) {
+            case RADIO_STATE_STATE_RxIdle:
+                /* only process packet if event callback is set and CRC is valid */
+                if ((nrf802154_dev.netdev.event_callback) &&
+                    (NRF_RADIO->CRCSTATUS == 1) &&
+                    (netdev_ieee802154_dst_filter(&nrf802154_dev,
+                                                  &rxbuf[1]) == 0)) {
+                    _state |= 1 << NETDEV_EVENT_RX_COMPLETE;
+                }
+                else {
+                    _reset_rx();
+                }
+                break;
+            case RADIO_STATE_STATE_Tx:
+            case RADIO_STATE_STATE_TxIdle:
+            case RADIO_STATE_STATE_TxDisable:
+                DEBUG("TX state: %x\n", (uint8_t)NRF_RADIO->STATE);
+                _state |= 1 << NETDEV_EVENT_TX_COMPLETE;
+                mutex_unlock(&txlock);
+                _enable_rx();
+                break;
+            default:
+                DEBUG("Unhandled state: %x\n", (uint8_t)NRF_RADIO->STATE);
         }
-        else {
-            _reset_rx();
+        if (_state) {
+            nrf802154_dev.netdev.event_callback(&nrf802154_dev.netdev, NETDEV_EVENT_ISR);
         }
     }
-    else if (NRF_RADIO->STATE == RADIO_STATE_STATE_TxIdle) {
-        _state |= 1 << NETDEV_EVENT_TX_COMPLETE;
-        mutex_unlock(&txlock);
-        _enable_rx();
-    }
-
-    if (_state) {
-        nrf802154_dev.netdev.event_callback(&nrf802154_dev.netdev, NETDEV_EVENT_ISR);
+    else {
+        DEBUG("nrf: err IRQ\n");
     }
 
     cortexm_isr_end();
