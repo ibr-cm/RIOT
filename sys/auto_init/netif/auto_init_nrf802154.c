@@ -8,13 +8,13 @@
  */
 
 /*
- * @ingroup     auto_init_gnrc_netif
+ * @ingroup sys_auto_init_gnrc_netif
  * @{
  *
  * @file
- * @brief       Auto initialization the nRF52840 radio in IEEE802.15.4 mode
+ * @brief   Auto initialization the nRF52840 radio in IEEE802.15.4 mode
  *
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author  Hauke Petersen <hauke.petersen@fu-berlin.de>
  */
 
 #ifdef MODULE_NRF802154
