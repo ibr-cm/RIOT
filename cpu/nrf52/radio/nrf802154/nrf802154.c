@@ -230,6 +230,8 @@ static int _init(netdev_t *dev)
 
 #ifdef MODULE_NETSTATS_L2
     memset(&dev->stats, 0, sizeof(netstats_t));
+#else
+    (void)dev;
 #endif
 
     /* switch to RX mode */
