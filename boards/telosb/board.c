@@ -10,6 +10,7 @@
 #include "cpu.h"
 #include "board.h"
 #include "stdio_uart.h"
+#include "log.h"
 
 void uart_init(void);
 
@@ -52,17 +53,10 @@ static void telosb_ports_init(void)
 void msp430_init_dco(void)
 {
     /* This code taken from the FU Berlin sources and reformatted. */
-#define DELTA    (F_CPU / (F_RC_OSCILLATOR / 8))
-
+	#define DELTA    (F_CPU / (F_RC_OSCILLATOR / 8))
+	LOG_INFO("Starting self calibration.\n");
     unsigned int oldcapture = 0;
     unsigned int i;
-
-    /* 10100100 = XT2 is off, ACLK divided by 4, RSELx=4 */
-    BCSCTL1 = XT2OFF | DIVA_2 | RSEL2;
-
-    /* Init undivided DCO with internal resistor for MCLK and SMCLK
-     * DCO = 32762Hz -> FLL = 2,4576 MHz */
-    BCSCTL2 = 0x00;
 
     BCSCTL1 |= DIVA1 + DIVA0;             /* ACLK = LFXT1CLK/8 */
 
@@ -72,7 +66,7 @@ void msp430_init_dco(void)
 
     CCTL2 = CCIS0 + CM0 + CAP;            /* Define CCR2, CAP, ACLK */
     TACTL = TASSEL1 + TACLR + MC1;        /* SMCLK, continous mode */
-
+    i = 0;
     while (1) {
         unsigned int compare;
 
@@ -84,9 +78,11 @@ void msp430_init_dco(void)
         oldcapture = CCR2;                  /* Save current captured SMCLK */
 
         if (DELTA == compare) {
+            LOG_INFO("Perfect. Ending calib. Attempt: %d\n", i);
             break;                            /* if equal, leave "while (1)" */
         }
         else if (DELTA < compare) {        /* DCO is too fast, slow it down */
+            //LOG_INFO("too fast, slowing down\n");
             DCOCTL--;
 
             if (DCOCTL == 0xFF) {             /* Did DCO role under? */
@@ -94,6 +90,7 @@ void msp430_init_dco(void)
             }
         }
         else {                            /* -> Select next lower RSEL */
+            //LOG_INFO("too slow, go faster\n");
             DCOCTL++;
 
             if (DCOCTL == 0x00) {             /* Did DCO role over? */
@@ -102,6 +99,7 @@ void msp430_init_dco(void)
 
             /* -> Select next higher RSEL  */
         }
+        i++;
     }
 
     CCTL2 = 0;                            /* Stop CCR2 function */
@@ -115,16 +113,28 @@ void msp430_init_dco(void)
 
 void board_init(void)
 {
+
+    /* 10100100 = XT2 is off, ACLK divided by 4, RSELx=4 */
+    BCSCTL1 = XT2OFF | DIVA_2 | RSEL2;
+
+    /* Init undivided DCO with internal resistor for MCLK and SMCLK
+     * DCO = 32762Hz -> FLL = 2,4576 MHz */
+    BCSCTL2 = 0x00;
+
+    LOG_INFO("Begin board init\n");
     msp430_cpu_init();
     /* disable watchdog timer */
     WDTCTL     =  WDTPW + WDTHOLD;
 
     telosb_ports_init();
-    msp430_init_dco();
+    
 
     /* initialize STDIO */
     stdio_init();
 
+    msp430_init_dco();
     /* enable interrupts */
     __bis_SR_register(GIE);
+
+    LOG_INFO("End board init\n");
 }

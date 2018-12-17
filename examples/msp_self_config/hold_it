@@ -1,0 +1,40 @@
+
+
+
+
+		CCTL2 = CCIS0 + CM0 + CAP;            /* Define CCR2, CAP, ACLK */
+		TACTL = TASSEL1 + TACLR + MC1;        /* SMCLK, continous mode */
+
+
+
+		while(1) {
+
+			while((CCTL2 & CCIFG) != CCIFG);    /* Wait until capture occured! */
+			CCTL2 &= ~CCIFG;                    /* Capture occured, clear flag */
+			compare = CCR2;                     /* Get current captured SMCLK */
+			compare = compare - oldcapture;     /* SMCLK difference */
+			oldcapture = CCR2;                  /* Save current captured SMCLK */
+
+			if(DELTA == compare) {
+				printf("Equals delta\n");
+				break;                            /* if equal, leave "while(1)" */
+			} else if(DELTA < compare) { 
+				puts("Too Low! Adjusting!");       /* DCO is too fast, slow it down */
+				DCOCTL--;
+				if(DCOCTL == 0xFF) {              /* Did DCO role under? */
+					BCSCTL1--;
+				}
+			} else { 
+				puts("Too High! Adjusting!");                         /* -> Select next lower RSEL */
+				DCOCTL++;
+				if(DCOCTL == 0x00) {              /* Did DCO role over? */
+					BCSCTL1++;
+				}
+																					/* -> Select next higher RSEL  */
+			}
+		}
+
+		CCTL2 = 0;                            /* Stop CCR2 function */
+		TACTL = 0;                            /* Stop Timer_A */
+
+		BCSCTL1 &= ~(DIVA1 + DIVA0); /* remove /8 divisor from ACLK again */
