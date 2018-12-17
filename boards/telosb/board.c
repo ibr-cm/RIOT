@@ -52,6 +52,8 @@ static void telosb_ports_init(void)
 /* taken from Contiki code */
 void msp430_init_dco(void)
 {
+    int oldCCTL2;
+    int oldTACTL;
     /* This code taken from the FU Berlin sources and reformatted. */
 	#define DELTA    (F_CPU / (F_RC_OSCILLATOR / 8))
 	LOG_INFO("Starting self calibration.\n");
@@ -64,9 +66,14 @@ void msp430_init_dco(void)
         __asm__("nop");
     }
 
+    /*save old settings */
+    oldCCTL2 = CCTL2;
+    oldTACTL = TACTL;
+
     CCTL2 = CCIS0 + CM0 + CAP;            /* Define CCR2, CAP, ACLK */
     TACTL = TASSEL1 + TACLR + MC1;        /* SMCLK, continous mode */
     i = 0;
+    
     while (1) {
         unsigned int compare;
 
@@ -100,12 +107,25 @@ void msp430_init_dco(void)
             /* -> Select next higher RSEL  */
         }
         i++;
+        if(i == 1000)
+        {
+            LOG_INFO("Took too long. Timeout!");
+            break;
+        }
     }
 
     CCTL2 = 0;                            /* Stop CCR2 function */
     TACTL = 0;                            /* Stop Timer_A */
 
+    /*restore old settings*/
+    CCTL2 = oldCCTL2;
+    TACTL = oldTACTL;
+
     BCSCTL1 &= ~(DIVA1 + DIVA0);          /* remove /8 divisor from ACLK again */
+
+    for (i = 0xFFFF; i > 0; i--) {        /* Delay for XTAL to settle */
+        __asm__("nop");
+    }
 }
 
 
