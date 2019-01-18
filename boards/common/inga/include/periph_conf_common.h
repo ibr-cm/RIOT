@@ -96,10 +96,10 @@ extern "C" {
  * INGA BMP085 configuration
  * @{
  */
-#define BMP085_PARAM_ADDR (0x77) /* 0xEE>>1 */
-#define BMP085_PARAM_I2C   (0)
-#define BMP085_PARAMS  {.i2c_dev = BMP085_PARAM_I2C, \
-						.i2c_addr = BMP085_PARAM_ADDR, \
+#define BMP180_PARAM_ADDR (0x77) /* 0xEE>>1 */
+#define BMP180_PARAM_I2C   (0)
+#define BMP180_PARAMS  {.i2c_dev = BMP180_PARAM_I2C, \
+						.i2c_addr = BMP180_PARAM_ADDR, \
 						.oversampling = BMP180_STANDARD }
 /** @} */
 

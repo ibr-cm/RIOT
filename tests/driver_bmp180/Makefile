@@ -5,7 +5,7 @@ USEMODULE += xtimer
 USEMODULE += printf_float
 
 # set default altitude
-TEST_ALTITUDE ?= 158 # altitude in Polytechnique School campus
+TEST_ALTITUDE ?= 75 # altitude in Polytechnique School campus
 
 # export altitude parameter
 CFLAGS += -DTEST_ALTITUDE=$(TEST_ALTITUDE)
