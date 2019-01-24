@@ -149,7 +149,7 @@ int shell_temp(int argc, char** argv) {
 
 	i2c_acquire(0);
     //i2c_read_reg(0, 0x48, 0x00, &result);
-	i2c_read_regs(0, 0x48, 0x00, result, 2);
+	i2c_read_regs(0, 0x48, 0x00, result, 2, 0);
 	i2c_release(0);
     //uint16_t temp = (result[0] << 8) | (result[1] >> 4);
 	//printf("temperature is %d %d\n", result[0], result[1]);
@@ -509,6 +509,7 @@ void *send_thread(void *arg)
 
 int main(void)
 {
+    (void) puts("Welcome to RIOT!");
     /// +1 -> INGA working, but TelosB/Sky not
     thread_create(dump_thread_stack, sizeof(dump_thread_stack), THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST, dump_thread, NULL, "dump_thread");
 
