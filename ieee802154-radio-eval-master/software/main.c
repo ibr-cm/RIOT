@@ -514,7 +514,9 @@ int main(void)
     thread_create(dump_thread_stack, sizeof(dump_thread_stack), THREAD_PRIORITY_MAIN + 1, THREAD_CREATE_STACKTEST, dump_thread, NULL, "dump_thread");
 
     //int res = i2c_init(I2C_DEV(0));
+    #if defined(BOARD_INGA_BLUE) || defined(BOARD_INGA_RED)
     i2c_init(I2C_DEV(0));
+    #endif
     //printf("i2c init: %s\n", res == 0 ? "OK\n" : "FAILED\n");
     
     gnrc_netif_t *netif = NULL;

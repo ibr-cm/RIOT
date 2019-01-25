@@ -1,6 +1,8 @@
 APPLICATION=software
-BOARD ?= inga_blue
+#BOARD ?= inga_blue
 RIOTBASE ?= $(CURDIR)/../../
+
+BOARD_USES_I2C := inga_red inga_blue /
 
 USEMODULE += shell
 USEMODULE += shell_commands
@@ -11,7 +13,9 @@ USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
 #USEMODULE += gnrc_txtsnd
 #USEMODULE += gnrc_pktdump
-USEMODULE += periph_i2c
+ifneq (,$(filter $(BOARD),$(BOARD_USES_I2C)))
+	USEMODULE += periph_i2c
+endif
 
 NODE_ID ?= 0
 CFLAGS += -DNODE_ID=$(NODE_ID)
@@ -19,9 +23,10 @@ CFLAGS += -DDEBUG_ASSERT_VERBOSE
 CFLAGS += -DGNRC_PKTBUF_SIZE=512
 CFLAGS += -DSHELL_NO_ECHO -DSHELL_NO_PROMPT
 
-BAUD := 9600
 
-CFLAGS += -DUART_STDIO_BAUDRATE=9600
+
+
+
 
 DEVELHELP ?= 1
 # No debug information
