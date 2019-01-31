@@ -11,6 +11,9 @@
 #include "board.h"
 #include "stdio_uart.h"
 #include "log.h"
+#define ENABLE_DEBUG      (0)
+#include "debug.h"
+
 
 void uart_init(void);
 
@@ -56,7 +59,7 @@ void msp430_init_dco(void)
     int oldTACTL;
     /* This code taken from the FU Berlin sources and reformatted. */
 	#define DELTA    (F_CPU / (F_RC_OSCILLATOR / 8))
-	LOG_INFO("Starting self calibration.\n");
+	DEBUG("Starting self calibration.\n");
     unsigned int oldcapture = 0;
     unsigned int i;
 
@@ -85,7 +88,7 @@ void msp430_init_dco(void)
         oldcapture = CCR2;                  /* Save current captured SMCLK */
 
         if (DELTA == compare) {
-            LOG_INFO("Perfect. Ending calib. Attempt: %d\n", i);
+            DEBUG("Perfect. Ending calib. Attempt: %d\n", i);
             break;                            /* if equal, leave "while (1)" */
         }
         else if (DELTA < compare) {        /* DCO is too fast, slow it down */
@@ -109,7 +112,7 @@ void msp430_init_dco(void)
         i++;
         if(i == 1000)
         {
-            LOG_INFO("Took too long. Timeout!");
+            DEBUG("Took too long. Timeout!");
             break;
         }
     }
