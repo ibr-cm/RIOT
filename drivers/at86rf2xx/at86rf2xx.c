@@ -33,7 +33,7 @@
 #include "at86rf2xx_internal.h"
 #include "at86rf2xx_netdev.h"
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 
 
@@ -90,9 +90,9 @@ void at86rf2xx_reset(at86rf2xx_t *dev)
     /* enable safe mode (protect RX FIFO until reading data starts) */
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_2,
                         AT86RF2XX_TRX_CTRL_2_MASK__RX_SAFE_MODE);
-#ifdef MODULE_AT86RF212B
+    #ifdef MODULE_AT86RF212B
     at86rf2xx_set_page(dev, AT86RF2XX_DEFAULT_PAGE);
-#endif
+    #endif
 
     /* don't populate masked interrupt flags to IRQ_STATUS register */
     uint8_t tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_1);
@@ -100,16 +100,16 @@ void at86rf2xx_reset(at86rf2xx_t *dev)
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_1, tmp);
 
     /* configure smart idle listening feature */
-#if AT86RF2XX_SMART_IDLE_LISTENING
-    tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_RPC);
-    tmp |= (AT86RF2XX_TRX_RPC_MASK__RX_RPC_EN |
-            AT86RF2XX_TRX_RPC_MASK__PDT_RPC_EN |
-            AT86RF2XX_TRX_RPC_MASK__PLL_RPC_EN |
-            AT86RF2XX_TRX_RPC_MASK__XAH_TX_RPC_EN |
-            AT86RF2XX_TRX_RPC_MASK__IPAN_RPC_EN);
-    at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_RPC, tmp);
-    at86rf2xx_set_rxsensitivity(dev, RSSI_BASE_VAL);
-#endif
+    #if AT86RF2XX_SMART_IDLE_LISTENING
+        tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_RPC);
+        tmp |= (AT86RF2XX_TRX_RPC_MASK__RX_RPC_EN |
+                AT86RF2XX_TRX_RPC_MASK__PDT_RPC_EN |
+                AT86RF2XX_TRX_RPC_MASK__PLL_RPC_EN |
+                AT86RF2XX_TRX_RPC_MASK__XAH_TX_RPC_EN |
+                AT86RF2XX_TRX_RPC_MASK__IPAN_RPC_EN);
+        at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_RPC, tmp);
+        at86rf2xx_set_rxsensitivity(dev, RSSI_BASE_VAL);
+    #endif
 
     /* disable clock output to save power */
     tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_CTRL_0);
@@ -207,4 +207,21 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
     at86rf2xx_set_state(dev, old_state);
     return ret;
+}
+
+void at86rf233_disable_irq(at86rf2xx_t *dev)
+{
+    /* disable interrupts */
+    at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK, 0x00);
+    /* clear interrupt flags */
+    //at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+}
+
+void at86rf233_enable_irq(at86rf2xx_t *dev)
+{
+    /* enable interrupts */
+    at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
+                        AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
+    /* clear interrupt flags */
+    at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
 }
