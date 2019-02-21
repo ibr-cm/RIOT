@@ -33,7 +33,7 @@
 #include "at86rf2xx_internal.h"
 #include "at86rf2xx_netdev.h"
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 
@@ -214,7 +214,7 @@ void at86rf233_disable_irq(at86rf2xx_t *dev)
     /* disable interrupts */
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK, 0x00);
     /* clear interrupt flags */
-    //at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
+    at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
 }
 
 void at86rf233_enable_irq(at86rf2xx_t *dev)
