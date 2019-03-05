@@ -535,9 +535,9 @@ void at86rf2xx_tx_exec(const at86rf2xx_t *dev);
  */
 bool at86rf2xx_cca(at86rf2xx_t *dev);
 
-void at86rf233_disable_irq(at86rf2xx_t *dev);
+uint8_t at86rf233_disable_irq(at86rf2xx_t *dev);
 
-void at86rf233_enable_irq(at86rf2xx_t *dev);
+uint8_t at86rf233_enable_irq(at86rf2xx_t *dev);
 
 #ifdef __cplusplus
 }

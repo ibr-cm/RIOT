@@ -208,20 +208,3 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     at86rf2xx_set_state(dev, old_state);
     return ret;
 }
-
-void at86rf233_disable_irq(at86rf2xx_t *dev)
-{
-    /* disable interrupts */
-    at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK, 0x00);
-    /* clear interrupt flags */
-    at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
-}
-
-void at86rf233_enable_irq(at86rf2xx_t *dev)
-{
-    /* enable interrupts */
-    at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
-                        AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
-    /* clear interrupt flags */
-    at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
-}
