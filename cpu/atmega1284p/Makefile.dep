@@ -1,0 +1,8 @@
+# atmega1284p additionally has PCINT3
+ifneq (,$(filter atmega_pcint,$(USEMODULE)))
+    USEMODULE += atmega_pcint3
+endif
+
+# FEATURE_REQUIRED for atmega_pcint3 centralized in atmega_common for future use cases!
+
+-include $(RIOTCPU)/atmega_common/Makefile.dep

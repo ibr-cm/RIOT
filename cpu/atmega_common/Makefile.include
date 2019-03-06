@@ -42,3 +42,6 @@ LINKFLAGS += $(LDSCRIPT_COMPAT)
 
 # avr libc needs some RIOT-specific support code
 USEMODULE += avr_libc_extra
+
+PSEUDOMODULES += atmega_pcint
+PSEUDOMODULES += atmega_pcint%
