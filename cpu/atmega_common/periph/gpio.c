@@ -442,6 +442,75 @@ ISR(PCINT3_vect, ISR_BLOCK)
 
 #endif  /* ENABLE_PCINT */
 
+#ifdef PCINT_NUM_BANKS
+/* inline function that is used by the PCINT ISR */
+static inline void pcint_handler(uint8_t bank, volatile uint8_t *mask_reg)
+{
+    __enter_isr();
+    /* Find right item */
+    uint8_t pin_num = 0;
+    uint8_t enabled_pcints = *mask_reg;
+
+    while (enabled_pcints > 0) {
+        /* check if this pin is enabled & has changed */
+        if (enabled_pcints & 0x1) {
+            uint8_t pin_mask = (1 << pin_num);
+            gpio_t pin = pcint_mapping[ bank * 8 + pin_num ];
+            uint8_t port_value = (_SFR_MEM8(_pin_addr( pin )));
+            uint8_t pin_value = ((port_value & pin_mask) != 0);
+            uint8_t old_state = ((pcint_state[ bank ] & pin_mask) != 0);
+            gpio_isr_ctx_pcint_t *conf = &pcint_config[ bank * 8 + pin_num ];
+            if (old_state != pin_value) {
+                if (pin_value) {
+                    pcint_state[ bank ] |= (pin_mask);
+                }
+                else {
+                    pcint_state[ bank ] &= ~(pin_mask);
+                }
+                if ((conf->flank == GPIO_BOTH ||
+                     (pin_value && conf->flank == GPIO_RISING) ||
+                     (!pin_value && conf->flank == GPIO_FALLING))) {
+                    /* execute callback routine */
+                    conf->cb(conf->arg);
+                }
+            }
+        }
+        enabled_pcints = enabled_pcints >> 1;
+        pin_num++;
+    }
+
+    __exit_isr();
+}
+#if defined(PCINT0_IDX)
+ISR(PCINT0_vect, ISR_BLOCK)
+{
+    pcint_handler(PCINT0_IDX, &PCMSK0);
+}
+#endif /* PCINT0_IDX */
+
+#if defined(PCINT1_IDX)
+ISR(PCINT1_vect, ISR_BLOCK)
+{
+    pcint_handler(PCINT1_IDX, &PCMSK1);
+}
+#endif  /* PCINT1_IDX */
+
+#if defined(PCINT2_IDX)
+ISR(PCINT2_vect, ISR_BLOCK)
+{
+    pcint_handler(PCINT2_IDX, &PCMSK2);
+}
+#endif  /* PCINT2_IDX */
+
+#if defined(PCINT3_IDX)
+ISR(PCINT3_vect, ISR_BLOCK)
+{
+    pcint_handler(PCINT3_IDX, &PCMSK3);
+}
+#endif  /* PCINT3_IDX */
+
+#endif  /* GPIO_PC_INT_NUMOF */
+
 ISR(INT0_vect, ISR_BLOCK)
 {
     irq_handler(0); /**< predefined interrupt pin */

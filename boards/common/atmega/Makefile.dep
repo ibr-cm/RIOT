@@ -1,0 +1,1 @@
+include $(RIOTCPU)/$(CPU)/Makefile.dep

@@ -7,3 +7,4 @@ PSEUDOMODULES += atmega_pcint
 PSEUDOMODULES += atmega_pcint%
 
 include $(RIOTMAKE)/arch/atmega.inc.mk
+
