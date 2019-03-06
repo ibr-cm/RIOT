@@ -1,1 +1,2 @@
 USEMODULE += boards_common_atmega
+include $(RIOTBOARD)/common/atmega/Makefile.dep
