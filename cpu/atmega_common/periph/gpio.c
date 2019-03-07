@@ -67,7 +67,7 @@ static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
 /**
  * @brief detects ammount of possible PCINTs
  */
-#if defined(MODULE_ATMEGA_PCINT) || defined(MODULE_ATMEGA_PCINT0) || defined(MODULE_ATMEGA_PCINT1) || defined(MODULE_ATMEGA_PCINT2) || defined(MODULE_ATMEGA_PCINT3)
+#if defined(MODULE_ATMEGA_PCINT0) || defined(MODULE_ATMEGA_PCINT1) || defined(MODULE_ATMEGA_PCINT2) || defined(MODULE_ATMEGA_PCINT3)
 #include "atmega_pcint.h"
 
 #ifndef ATMEGA_PCINT_MAP_PCINT0
@@ -77,33 +77,33 @@ static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
 /**
  * @brief check which pcints should be enabled!
  */
-#if defined(MODULE_ATMEGA_PCINT) || defined(MODULE_ATMEGA_PCINT0)
+#if defined(MODULE_ATMEGA_PCINT0) && defined(ATMEGA_PCINT_MAP_PCINT0)
 #define PCINT0_IDX (0)
 #define _COUNTER0  (1)
 #else
 #define _COUNTER0  (0)
-#endif
+#endif /* MODULE_ATMEGA_PCINT0 */ 
 
-#if defined(MODULE_ATMEGA_PCINT) || defined(MODULE_ATMEGA_PCINT1)
+#if defined(MODULE_ATMEGA_PCINT1) && defined(ATMEGA_PCINT_MAP_PCINT1)
 #define PCINT1_IDX _COUNTER0
 #define _COUNTER1 (_COUNTER0 + 1)
 #else
 #define _COUNTER1 _COUNTER0
-#endif
+#endif /* MODULE_ATMEGA_PCINT1 */ 
 
-#if defined(MODULE_ATMEGA_PCINT) || defined(MODULE_ATMEGA_PCINT2)
+#if defined(MODULE_ATMEGA_PCINT2) && defined(ATMEGA_PCINT_MAP_PCINT2)
 #define PCINT2_IDX _COUNTER1
 #define _COUNTER2 (_COUNTER1 + 1)
 #else
 #define _COUNTER2 _COUNTER1
-#endif
+#endif /* MODULE_ATMEGA_PCINT2 */ 
 
-#if defined(MODULE_ATMEGA_PCINT) || defined(MODULE_ATMEGA_PCINT3)
+#if defined(MODULE_ATMEGA_PCINT3) && defined(ATMEGA_PCINT_MAP_PCINT3)
 #define PCINT3_IDX _COUNTER2
 #define _COUNTER3 (_COUNTER2 + 1)
 #else
 #define _COUNTER3 _COUNTER2
-#endif
+#endif /* MODULE_ATMEGA_PCINT3 */ 
 
 #define PCINT_NUM_BANKS (_COUNTER3)
 
@@ -128,22 +128,22 @@ typedef struct {
 static const gpio_t pcint_mapping[][8] = {
 #ifdef PCINT0_IDX
     ATMEGA_PCINT_MAP_PCINT0,
-#endif
+#endif /* PCINT0_IDX */
 #ifdef PCINT1_IDX
     ATMEGA_PCINT_MAP_PCINT1,
-#endif
+#endif /* PCINT1_IDX */
 #ifdef PCINT2_IDX
     ATMEGA_PCINT_MAP_PCINT2,
-#endif
+#endif /* PCINT2_IDX */
 #ifdef PCINT3_IDX
     ATMEGA_PCINT_MAP_PCINT3,
-#endif
+#endif /* PCINT3_IDX */
 };
 /**
  * @brief
  */
 static gpio_isr_ctx_pcint_t pcint_config[ 8 * PCINT_NUM_BANKS ];
-#endif  /* MODULE_ATMEGA_PCINT */
+#endif  /* MODULE_ATMEGA_PCINTn */
 
 #endif  /* MODULE_PERIPH_GPIO_IRQ */
 
