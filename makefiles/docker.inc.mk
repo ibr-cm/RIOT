@@ -60,6 +60,7 @@ export DOCKER_ENV_VARS = \
   SIZE \
   TOOLCHAIN \
   UNDEF \
+  NODE_ID \
   #
 
 # Find which variables were set using the command line or the environment and
