@@ -70,37 +70,49 @@ static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
 #if defined(MODULE_ATMEGA_PCINT0) || defined(MODULE_ATMEGA_PCINT1) || defined(MODULE_ATMEGA_PCINT2) || defined(MODULE_ATMEGA_PCINT3)
 #include "atmega_pcint.h"
 
-#ifndef ATMEGA_PCINT_MAP_PCINT0
-#error Please define pin change interrupts in atmega_pcint.h
-#endif /* ATMEGA_PCINT_MAP_PCINT0 */
-
 /**
  * @brief check which pcints should be enabled!
  */
-#if defined(MODULE_ATMEGA_PCINT0) && defined(ATMEGA_PCINT_MAP_PCINT0)
+#ifdef MODULE_ATMEGA_PCINT0
+#ifndef ATMEGA_PCINT_MAP_PCINT0
+#error Either mapping for pin change interrupt bank 0 is missing or not supported by the MCU
+#else
 #define PCINT0_IDX (0)
 #define _COUNTER0  (1)
+#endif /* ATMEGA_PCINT_MAP_PCINT0 */
 #else
 #define _COUNTER0  (0)
 #endif /* MODULE_ATMEGA_PCINT0 */ 
 
-#if defined(MODULE_ATMEGA_PCINT1) && defined(ATMEGA_PCINT_MAP_PCINT1)
+#ifdef MODULE_ATMEGA_PCINT1
+#ifndef ATMEGA_PCINT_MAP_PCINT1
+#error Either mapping for pin change interrupt bank 1 is missing or not supported by the MCU
+#else
 #define PCINT1_IDX _COUNTER0
 #define _COUNTER1 (_COUNTER0 + 1)
+#endif /* ATMEGA_PCINT_MAP_PCINT1 */
 #else
 #define _COUNTER1 _COUNTER0
 #endif /* MODULE_ATMEGA_PCINT1 */ 
 
-#if defined(MODULE_ATMEGA_PCINT2) && defined(ATMEGA_PCINT_MAP_PCINT2)
+#ifdef MODULE_ATMEGA_PCINT2
+#ifndef ATMEGA_PCINT_MAP_PCINT2
+#error Either mapping for pin change interrupt bank 2 is missing or not supported by the MCU
+#else
 #define PCINT2_IDX _COUNTER1
 #define _COUNTER2 (_COUNTER1 + 1)
+#endif /* ATMEGA_PCINT_MAP_PCINT2 */
 #else
 #define _COUNTER2 _COUNTER1
 #endif /* MODULE_ATMEGA_PCINT2 */ 
 
-#if defined(MODULE_ATMEGA_PCINT3) && defined(ATMEGA_PCINT_MAP_PCINT3)
+#ifdef MODULE_ATMEGA_PCINT3
+#ifndef ATMEGA_PCINT_MAP_PCINT3
+#error Either mapping for pin change interrupt bank 3 is missing or not supported by the MCU
+#else
 #define PCINT3_IDX _COUNTER2
 #define _COUNTER3 (_COUNTER2 + 1)
+#endif /* ATMEGA_PCINT_MAP_PCINT3 */
 #else
 #define _COUNTER3 _COUNTER2
 #endif /* MODULE_ATMEGA_PCINT3 */ 
