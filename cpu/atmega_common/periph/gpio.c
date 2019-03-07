@@ -296,6 +296,10 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                     break;
                 }
             }
+            /* break outer loop if pin was found */
+            if(offset != -1) {
+                break;
+            }
         }
         /* if pcint was not found: return -1  */
         if (offset < 0) {
