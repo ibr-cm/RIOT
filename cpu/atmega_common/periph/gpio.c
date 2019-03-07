@@ -347,7 +347,8 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
         }
         /* As ports are mixed in a bank (e.g. PCINT0), we can only save a single bit here! */
         uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ))));
-        uint8_t pin_value = (port_value & (1 << pin_num)) == 0 ? 0 : 1;
+        uint8_t pin_mask = (1 << pin_num);
+        uint8_t pin_value = (port_value & pin_mask) != 0;
         pcint_state[_port_num(pin)] ^= (-pin_value ^ pcint_state[_port_num(pin)]) & (1UL << pin_num);
         sei();
         return 0;
@@ -424,8 +425,8 @@ static inline void pcint_handler(uint8_t bank, volatile uint8_t *mask_reg)
             uint8_t pin_mask = (1 << pin_num);
             gpio_t pin = pcint_mapping[ bank ][ pin_num ];
             uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ))));
-            uint8_t pin_value = (port_value & pin_mask) == 0 ? 0 : 1;
-            uint8_t state = (pcint_state[_port_num(pin)] & pin_mask) == 0 ? 0 : 1;
+            uint8_t pin_value = (port_value & pin_mask) != 0;
+            uint8_t state = (pcint_state[_port_num(pin)] & pin_mask) != 0;
             gpio_isr_ctx_pcint_t *conf = &pcint_config[ bank * 8 + pin_num ];
             if (conf->flank == GPIO_BOTH || ((state & pin_mask) && conf->flank == GPIO_RISING) || (!(state & pin_mask) && conf->flank == GPIO_FALLING)) {
                 pcint_state[_port_num(pin)] ^= (-pin_value ^ pcint_state[_port_num(pin)]) & (1UL << pin_num);
