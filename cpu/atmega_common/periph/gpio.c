@@ -113,7 +113,7 @@ static gpio_isr_ctx_t config[GPIO_EXT_INT_NUMOF];
 static uint8_t pcint_state[ PCINT_NUM_BANKS ];
 
 /**
- * @brief stores all cb and args for all defined pcint. 
+ * @brief stores all cb and args for all defined pcint.
  */
 typedef struct {
     gpio_cb_t cb;           /**< interrupt callback */
@@ -125,7 +125,7 @@ typedef struct {
 /**
  * @brief
  */
-static gpio_t pcint_mapping[][8] = {
+static const gpio_t pcint_mapping[][8] = {
 #ifdef PCINT0_IDX
     ATMEGA_PCINT_MAP_PCINT0,
 #endif
@@ -140,12 +140,12 @@ static gpio_t pcint_mapping[][8] = {
 #endif
 };
 /**
- * @brief 
+ * @brief
  */
 static gpio_isr_ctx_pcint_t pcint_config[ 8 * PCINT_NUM_BANKS ];
-#endif /* MODULE_ATMEGA_PCINT */ 
+#endif  /* MODULE_ATMEGA_PCINT */
 
-#endif /* MODULE_PERIPH_GPIO_IRQ */
+#endif  /* MODULE_PERIPH_GPIO_IRQ */
 
 /**
  * @brief     Extract the pin number of the given pin
@@ -201,6 +201,7 @@ static inline uint16_t _pin_addr(gpio_t pin)
 int gpio_init(gpio_t pin, gpio_mode_t mode)
 {
     uint8_t pin_mask = (1 << _pin_num(pin));
+
     switch (mode) {
         case GPIO_OUT:
             _SFR_MEM8(_ddr_addr(pin)) |= pin_mask;
@@ -283,64 +284,66 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
 
     /* not a valid interrupt pin. Set as pcint instead if pcints are enabled */
     if (int_num < 0) {
-	    /* If pin change interrupts are enabled, enable mask and interrupt */
-        #ifdef PCINT_NUM_BANKS
+ /* If pin change interrupts are enabled, enable mask and interrupt */
+ #ifdef PCINT_NUM_BANKS
         int8_t offset = -1;
-        //uint8_t port_num = _port_num(pin);
         uint8_t pin_num = _pin_num(pin);
-        uint8_t b;
-        for(b=0; b<PCINT_NUM_BANKS; b++) {
-            for(uint8_t p=0; p<8; p++) {
-                if(pin == pcint_mapping[b][p]) {
-                    offset = b*8+p;
-                    //pcint_lookup[ _port_num(pin) * 8 + pin_num ] = i;
+        uint8_t bank;
+        for (bank = 0; bank < PCINT_NUM_BANKS; bank++) {
+            for (uint8_t p = 0; p < 8; p++) {
+                if (pin == pcint_mapping[bank][p]) {
+                    offset = bank * 8 + p;
                     break;
                 }
             }
         }
         /* if pcint was not found: return -1  */
-        if(offset < 0) {
+        if (offset < 0) {
             return offset;
         }
 
         /* save configuration for pin change interrupt */
-        pcint_config[offset].pin     = pin;
-        pcint_config[offset].flank   = flank;
-        pcint_config[offset].arg     = arg;
-        pcint_config[offset].cb      = cb;
+        pcint_config[offset].pin = pin;
+        pcint_config[offset].flank = flank;
+        pcint_config[offset].arg = arg;
+        pcint_config[offset].cb = cb;
 
-        /* init gpio */        
+        /* init gpio */
         gpio_init(pin, mode);
         /* configure pcint */
         cli();
-        switch (b) {
-            case 0:
+        switch (bank) {
+#ifdef PCINT0_IDX
+            case PCINT0_IDX:
                 PCMSK0 |= (1 << pin_num);
                 PCICR |= (1 << PCIE0);
                 break;
-            case 1:
+#endif
+#ifdef PCINT1_IDX
+            case PCINT0_IDX:
                 PCMSK1 |= (1 << pin_num);
                 PCICR |= (1 << PCIE1);
                 break;
-            #ifdef PCIE2
-            case 2:
+#endif
+#ifdef PCINT2_IDX
+            case PCINT2_IDX:
                 PCMSK2 |= (1 << pin_num);
                 PCICR |= (1 << PCIE2);
                 break;
-            #endif
-            #ifdef PCIE3
-            case 3:
+#endif
+#ifdef PCINT3_IDX
+            case PCINT2_IDX:
                 PCMSK3 |= (1 << pin_num);
                 PCICR |= (1 << PCIE3);
                 break;
-            #endif
+#endif
             default:
                 return -1;
                 break;
         }
         /* As ports are mixed in a bank (e.g. PCINT0), we can only save a single bit here! */
-        uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) )));
-        uint8_t pin_value = (port_value & (1<<pin_num) ) == 0 ? 0 : 1;
+        uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ))));
+        uint8_t pin_value = (port_value & (1 << pin_num)) == 0 ? 0 : 1;
         pcint_state[_port_num(pin)] ^= (-pin_value ^ pcint_state[_port_num(pin)]) & (1UL << pin_num);
         sei();
         return 0;
@@ -407,7 +410,7 @@ static inline void irq_handler(uint8_t int_num)
 static inline void pcint_handler(uint8_t bank, volatile uint8_t *mask_reg)
 {
     __enter_isr();
-	/* Find right item */
+    /* Find right item */
     uint8_t pin_num = 0;
     uint8_t enabled_pcints = *mask_reg;
 
@@ -416,9 +419,9 @@ static inline void pcint_handler(uint8_t bank, volatile uint8_t *mask_reg)
         if (enabled_pcints & 0x1) {
             uint8_t pin_mask = (1 << pin_num);
             gpio_t pin = pcint_mapping[ bank ][ pin_num ];
-            uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ) )));
-            uint8_t pin_value = (port_value & pin_mask ) == 0 ? 0 : 1;
-            uint8_t state = ( pcint_state[_port_num(pin)] & pin_mask ) == 0 ? 0 : 1;
+            uint8_t port_value = (_SFR_MEM8(_pin_addr( GPIO_PIN( _port_num(pin), pin_num ))));
+            uint8_t pin_value = (port_value & pin_mask) == 0 ? 0 : 1;
+            uint8_t state = (pcint_state[_port_num(pin)] & pin_mask) == 0 ? 0 : 1;
             gpio_isr_ctx_pcint_t *conf = &pcint_config[ bank * 8 + pin_num ];
             if (conf->flank == GPIO_BOTH || ((state & pin_mask) && conf->flank == GPIO_RISING) || (!(state & pin_mask) && conf->flank == GPIO_FALLING)) {
                 pcint_state[_port_num(pin)] ^= (-pin_value ^ pcint_state[_port_num(pin)]) & (1UL << pin_num);
@@ -429,34 +432,38 @@ static inline void pcint_handler(uint8_t bank, volatile uint8_t *mask_reg)
         enabled_pcints = enabled_pcints >> 1;
         pin_num++;
     }
-    
+
     __exit_isr();
 }
 #if defined(PCINT0_IDX)
-ISR(PCINT0_vect, ISR_BLOCK) {
+ISR(PCINT0_vect, ISR_BLOCK)
+{
     pcint_handler(PCINT0_IDX, &PCMSK0);
 }
 #endif
 
 #if defined(PCINT1_IDX)
-ISR(PCINT1_vect, ISR_BLOCK) {
+ISR(PCINT1_vect, ISR_BLOCK)
+{
     pcint_handler(PCINT1_IDX, &PCMSK1);
 }
 #endif  /* PCINT1_vect */
 
 #if defined(PCINT2_IDX)
-ISR(PCINT2_vect, ISR_BLOCK) {
+ISR(PCINT2_vect, ISR_BLOCK)
+{
     pcint_handler(PCINT2_IDX, &PCMSK2);
 }
 #endif  /* PCINT2_vect */
 
 #if defined(PCINT3_IDX)
-ISR(PCINT3_vect, ISR_BLOCK) {
+ISR(PCINT3_vect, ISR_BLOCK)
+{
     pcint_handler(PCINT3_IDX, &PCMSK3);
 }
 #endif  /* PCINT3_vect */
 
-#endif /* GPIO_PC_INT_NUMOF */
+#endif  /* GPIO_PC_INT_NUMOF */
 
 ISR(INT0_vect, ISR_BLOCK)
 {
