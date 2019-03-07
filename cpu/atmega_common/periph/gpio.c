@@ -322,25 +322,25 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 PCMSK0 |= (1 << pin_num);
                 PCICR |= (1 << PCIE0);
                 break;
-#endif
+#endif /* PCINT0_IDX */
 #ifdef PCINT1_IDX
             case PCINT1_IDX:
                 PCMSK1 |= (1 << pin_num);
                 PCICR |= (1 << PCIE1);
                 break;
-#endif
+#endif /* PCINT1_IDX */
 #ifdef PCINT2_IDX
             case PCINT2_IDX:
                 PCMSK2 |= (1 << pin_num);
                 PCICR |= (1 << PCIE2);
                 break;
-#endif
+#endif /* PCINT2_IDX */
 #ifdef PCINT3_IDX
             case PCINT3_IDX:
                 PCMSK3 |= (1 << pin_num);
                 PCICR |= (1 << PCIE3);
                 break;
-#endif
+#endif /* PCINT3_IDX */
             default:
                 return -1;
                 break;
@@ -444,28 +444,28 @@ ISR(PCINT0_vect, ISR_BLOCK)
 {
     pcint_handler(PCINT0_IDX, &PCMSK0);
 }
-#endif
+#endif /* PCINT0_IDX */
 
 #if defined(PCINT1_IDX)
 ISR(PCINT1_vect, ISR_BLOCK)
 {
     pcint_handler(PCINT1_IDX, &PCMSK1);
 }
-#endif  /* PCINT1_vect */
+#endif  /* PCINT1_IDX */
 
 #if defined(PCINT2_IDX)
 ISR(PCINT2_vect, ISR_BLOCK)
 {
     pcint_handler(PCINT2_IDX, &PCMSK2);
 }
-#endif  /* PCINT2_vect */
+#endif  /* PCINT2_IDX */
 
 #if defined(PCINT3_IDX)
 ISR(PCINT3_vect, ISR_BLOCK)
 {
     pcint_handler(PCINT3_IDX, &PCMSK3);
 }
-#endif  /* PCINT3_vect */
+#endif  /* PCINT3_IDX */
 
 #endif  /* GPIO_PC_INT_NUMOF */
 
