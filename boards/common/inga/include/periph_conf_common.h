@@ -71,11 +71,14 @@ extern "C" {
  * @{
  */
 #define ADXL345_PARAM_ADDR  ADXL345_ADDR_53 /* (0xA6>>1) */
-#define ADXL345_PARAM_I2C   (0)
-#define ADXL345_PARAMS              { .offset = ADXL345_PARAM_OFFSET,    \
-                                      .range  = ADXL345_RANGE_2G,     \
+#define ADXL345_PARAM_I2C   (I2C_DEV(0))
+#define ADXL345_PARAMS              { .i2c    = ADXL345_PARAM_I2C,       \
+                                      .addr   = ADXL345_PARAM_ADDR,      \
+                                      .offset = ADXL345_PARAM_OFFSET,    \
+                                      .range  = ADXL345_RANGE_2G,        \
                                       .rate   = ADXL345_RATE_100HZ,      \
                                       .full_res = ADXL345_PARAM_FULL_RES }
+
 /** @} */
 
 /**
@@ -90,17 +93,18 @@ extern "C" {
  * @{
  */
 #define L3G4200D_PARAM_ADDR (0x69) /* 0xD2>>1 */
-#define L3G4200D_PARAM_I2C   (0)
+#define L3G4200D_PARAM_I2C   (I2C_DEV(0))
+
 /** @} */
 
 /**
  * INGA BMP085 configuration
  * @{
  */
-#define BMP085_PARAM_ADDR (0x77) /* 0xEE>>1 */
-#define BMP085_PARAM_I2C   (0)
-#define BMP085_PARAMS  {.i2c_dev = BMP085_PARAM_I2C, \
-						.i2c_addr = BMP085_PARAM_ADDR, \
+#define BMP180_PARAM_ADDR (0x77) /* 0xEE>>1 */
+#define BMP180_PARAM_I2C   (I2C_DEV(0))
+#define BMP180_PARAMS  {.i2c_dev = BMP180_PARAM_I2C, \
+						.i2c_addr = BMP180_PARAM_ADDR, \
 						.oversampling = BMP180_STANDARD }
 /** @} */
 
