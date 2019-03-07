@@ -1,0 +1,19 @@
+ifneq (,$(filter atmega_pcint,$(USEMODULE)))
+    USEMODULE += atmega_pcint0 atmega_pcint1 atmega_pcint2 atmega_pcint3
+endif
+
+ifneq (,$(filter atmega_pcint0,$(USEMODULE)))
+    FEATURES_REQUIRED += atmega_pcint0
+endif
+
+ifneq (,$(filter atmega_pcint1,$(USEMODULE)))
+    FEATURES_REQUIRED += atmega_pcint1
+endif
+
+ifneq (,$(filter atmega_pcint2,$(USEMODULE)))
+    FEATURES_REQUIRED += atmega_pcint2
+endif
+
+ifneq (,$(filter atmega_pcint3,$(USEMODULE)))
+    FEATURES_REQUIRED += atmega_pcint3
+endif

@@ -9,8 +9,4 @@ USEMODULE += avr_libc_extra
 PSEUDOMODULES += atmega_pcint
 PSEUDOMODULES += atmega_pcint%
 
-ifneq (,$(filter atmega_pcint,$(USEMODULE)))
-    USEMODULE += atmega_pcint0 atmega_pcint1 atmega_pcint2 atmega_pcint3
-endif
-
 include $(RIOTMAKE)/arch/atmega.inc.mk
