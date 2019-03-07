@@ -320,7 +320,7 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 break;
 #endif
 #ifdef PCINT1_IDX
-            case PCINT0_IDX:
+            case PCINT1_IDX:
                 PCMSK1 |= (1 << pin_num);
                 PCICR |= (1 << PCIE1);
                 break;
@@ -332,7 +332,7 @@ int gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank,
                 break;
 #endif
 #ifdef PCINT3_IDX
-            case PCINT2_IDX:
+            case PCINT3_IDX:
                 PCMSK3 |= (1 << pin_num);
                 PCICR |= (1 << PCIE3);
                 break;
