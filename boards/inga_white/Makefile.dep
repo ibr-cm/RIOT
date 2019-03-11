@@ -1,3 +1,5 @@
 ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
   USEMODULE += at86rf231
 endif
+
+include $(RIOTBOARD)/common/inga/Makefile.dep
