@@ -94,6 +94,7 @@ extern "C" {
  */
 #define L3G4200D_PARAM_ADDR (0x69) /* 0xD2>>1 */
 #define L3G4200D_PARAM_I2C   (I2C_DEV(0))
+#define L3G4200D_PARAM_MODE L3G4200D_MODE_100_25
 
 /** @} */
 
