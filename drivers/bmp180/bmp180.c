@@ -147,8 +147,8 @@ uint32_t bmp180_read_pressure(const bmp180_t *dev)
     x1 = ((int32_t)dev->calibration.ac3 * b6) >> 13;
     x2 = ((int32_t)dev->calibration.b1 * (b6 * b6) >> 12) >> 16;
     x3 = ((x1 + x2) + 2) >> 2;
-    b4 = ((uint32_t)dev->calibration.ac4 * (uint32_t)(x3 + 32768)) >> 15;
-    b7 = (uint32_t)(up - b3) * (uint32_t)(50000UL >> OVERSAMPLING);
+    b4 = (((int32_t)dev->calibration.ac4) * (uint32_t)(x3+32768)) >> 15;
+    b7 = ((uint32_t)(up - b3)) * (uint32_t)(50000UL >> OVERSAMPLING);
     if (b7 < 0x80000000) {
         p = (b7 * 2) / b4;
     }
@@ -159,7 +159,7 @@ uint32_t bmp180_read_pressure(const bmp180_t *dev)
     x1 = (p >> 8) * (p >> 8);
     x1 = (x1 * 3038) >> 16;
     x2 = (-7357 * p) >> 16;
-
+    
     return (uint32_t)(p + ((x1 + x2 + 3791) >> 4));
 }
 
@@ -193,7 +193,7 @@ static int _read_ut(const bmp180_t *dev, int32_t *output)
         i2c_release(DEV_I2C);
         return -1;
     }
-    *output = ((uint16_t)ut[0] << 8) | ut[1];
+    *output = ((uint16_t)ut[0] << 8) | ((uint16_t)ut[1]);
 
     DEBUG("UT: %i\n", (int)*output);
 
@@ -241,7 +241,7 @@ static int _read_up(const bmp180_t *dev, int32_t *output)
 static int _compute_b5(const bmp180_t *dev, int32_t ut, int32_t *output)
 {
     int32_t x1 = 0, x2 = 0;
-    x1 = (((int32_t)ut - (int32_t)dev->calibration.ac6) * (int32_t)dev->calibration.ac5) >> 15;
+    x1 = ((int32_t)ut - (int32_t)dev->calibration.ac6) * (int32_t)dev->calibration.ac5 >> 15;
     x2 = ((int32_t)dev->calibration.mc << 11) / (x1 + dev->calibration.md);
 
     *output = x1 + x2;
