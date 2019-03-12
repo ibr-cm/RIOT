@@ -103,6 +103,10 @@ extern "C" {
 #define GNRC_NETIF_HDR_FLAGS_MORE_DATA  (0x10)
 
 /**
+ * @brief   Link-layer checksum was valid on receive
+ */
+#define GNRC_NETIF_HDR_FLAGS_CRC_VALID  (0x01)
+/**
  * @brief   Indicate presence of a valid timestamp
  *
  * @details If (and only if) module `gnrc_netif_timestamp` is used and the
