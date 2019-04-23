@@ -36,7 +36,7 @@
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netif/internal.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG    (1)
 #include "debug.h"
 
 static gnrc_netif_t _netifs[GNRC_NETIF_NUMOF];
