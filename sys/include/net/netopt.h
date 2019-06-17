@@ -664,6 +664,8 @@ typedef enum {
 
     /* add more options if needed */
 
+	NETOPT_IPS_START,
+
     /**
      * @brief   maximum number of options defined here.
      *
