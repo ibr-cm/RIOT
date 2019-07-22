@@ -76,4 +76,9 @@ void idealvolting_sleep(uint8_t duration);
  */
 void idealvolting_print_status(void);
 
+/**
+  * Get Temperature from sensor on reaper board
+  */ 
+int8_t idealvolting_get_temp(void);
+
 #endif /* IDEALVOLTING_H */

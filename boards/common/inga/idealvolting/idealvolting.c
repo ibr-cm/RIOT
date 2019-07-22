@@ -305,3 +305,7 @@ void idealvolting_print_status(void)
 	printf("Table used  = %s\n", iv_state.table ? "true" : "false");
 	mutex_unlock(&iv_mutex);
 }
+
+int8_t idealvolting_get_temp(void) {
+    return iv_state.temp;
+}
