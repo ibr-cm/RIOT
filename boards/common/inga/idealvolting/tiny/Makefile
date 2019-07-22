@@ -9,7 +9,7 @@ AVRDUDE=avrdude
 
 NAME_TINY=tiny
 
-PROGRAMMER_TYPE_TINY=avrispmkII
+PROGRAMMER_TYPE_TINY=jtag2isp
 PROGRAMMER_PORT_TINY=usb
 
 # use more debug-flags when compiling
