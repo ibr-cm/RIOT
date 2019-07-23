@@ -101,6 +101,8 @@ extern "C" {
 #define BMP085_PARAMS  {.i2c_dev = BMP085_PARAM_I2C, \
 						.i2c_addr = BMP085_PARAM_ADDR, \
 						.oversampling = BMP180_STANDARD }
+
+#define BMP180_SAUL_INFO             { .name = "inga_red bmp180" }
 /** @} */
 
 /**
