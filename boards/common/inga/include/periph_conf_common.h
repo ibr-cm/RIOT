@@ -18,7 +18,9 @@ extern "C" {
  * @brief   Clock configuration
  * @{
  */
+#ifndef CLOCK_CORECLOCK
 #define CLOCK_CORECLOCK     (8000000UL)
+#endif
 /** @} */
 
 /**

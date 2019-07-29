@@ -19,6 +19,8 @@
 #ifndef PERIPH_CONF_H_
 #define PERIPH_CONF_H_
 
+#define CLOCK_CORECLOCK     (1000000UL)
+
 #include "periph_conf_common.h"
 
 #ifdef __cplusplus

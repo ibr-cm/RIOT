@@ -34,6 +34,7 @@
 #include "thread.h"
 
 #include "periph/uart.h"
+#include "board.h"
 
 #ifdef MODULE_PM_LAYERED
 #include "pm_layered.h"
