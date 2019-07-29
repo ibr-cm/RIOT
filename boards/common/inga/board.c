@@ -50,6 +50,7 @@ void board_init(void)
 
     /* Disable JTAG to be able to use PCINTs on PD5, PD6, PD7 */
     MCUCR=(1<<JTD);
+    MCUCR=(1<<JTD);
 
     /* Button */
 #ifdef BTN0_PIN

@@ -78,6 +78,7 @@ uint32_t rtt_get_alarm(void) {
 }
 
 void rtt_clear_alarm(void) {
+    TCCR2B = 0;
     TIMSK2 &= ~(1 << OCIE2A);
     OCR2A = 0;
 }
@@ -90,6 +91,7 @@ void rtt_poweron(void) {
 }
 
 void rtt_poweroff(void) {
+    rtt_clear_alarm();
     power_timer2_disable();
 #ifdef MODULE_PM_LAYERED
     pm_unblock(PM_INVALID_TIMER2);
