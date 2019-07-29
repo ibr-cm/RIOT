@@ -52,11 +52,15 @@ void i2c_init_master(void)
 usi_twi_result_t i2c_write_bytes(uint8_t addr, uint8_t *data, uint8_t len)
 {
 	_i2c_start();
-	if (!_i2c_write_byte(addr << 1))
+	if (!_i2c_write_byte(addr << 1)) {
+		_i2c_stop();
 		return USI_TWI_NO_ACK_ON_ADDRESS;
+	}	
 	while (len--) {
-		if (!_i2c_write_byte(*(data++)))
+		if (!_i2c_write_byte(*(data++))) {
+			_i2c_stop();
 			return USI_TWI_NO_ACK_ON_DATA;
+		}	
 	}
 	_i2c_stop();
 	return USI_TWI_SUCCESS;

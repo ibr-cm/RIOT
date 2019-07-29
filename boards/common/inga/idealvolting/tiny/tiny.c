@@ -169,7 +169,7 @@ void si_master(void)
 		if (result == USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":w1");
 			break;
-		}
+		}	
 		if (startup) {
 			--startup;
 			continue;
@@ -192,7 +192,10 @@ void si_master(void)
 			this_sleeptime--;
 		}
 		// if temperature changed adapt voltage
+		PORTA &= ~(1<<PA1);  // Enable i2c level shifter
 		result = get_temp(&this_temperature);
+		PORTA |= (1<<PA1);  // Disable i2c level shifter
+		
 		if (result != USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":e1");
 			master_reset_mega();
