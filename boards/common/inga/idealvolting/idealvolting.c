@@ -33,7 +33,7 @@
 #include <mutex.h>
 #include "periph/pm.h"
 
-#define ENABLE_DEBUG 	(1)
+#define ENABLE_DEBUG 	(0)
 #include "debug.h"
 
 #define IV_THREAD_PRIORITY 0
@@ -270,7 +270,6 @@ void *iv_thread(void *arg)
 		default:
 			if (iv_state.running == IV_ACTIVE) {
 				send_si_req(&req, &res);
-				DEBUG("setting voltage to: %d\n", res.voltage);
 				VSCALE_SET_REG(&vscale_dev, res.voltage);
 			}
 		}
