@@ -24,6 +24,7 @@ SOURCES_TINY= \
               tiny.c \
               drv/sw_uart.c \
               vtable.c \
+			  drv/pcf85063.c \
               ${EMPTY}
 
 HEADERS_TINY= \
@@ -32,6 +33,7 @@ HEADERS_TINY= \
               drv/usi.h \
               drv/sw_uart.h \
               drv/temp.h \
+			  drv/pcf85063.h \
               vtable.h \
               ../include/idealvolting_config.h \
               ../include/idealvolting_frame.h \

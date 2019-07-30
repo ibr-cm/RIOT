@@ -52,6 +52,7 @@
 #include "drv/adc-drv.h"
 #include "drv/sw_uart.h"
 #include "drv/temp.h"
+#include "drv/pcf85063.h"
 
 static iv_req_t *req_buffer = (iv_req_t *) rxbuffer; //the recieved data is stored in the rx_buffer (=req_buffer)
 static uint8_t *lock_buffer = (uint8_t *) txbuffer;	//the data the tiny is sending is stored in tx_buffer (=res_buffer)
@@ -128,6 +129,13 @@ void si_init(void)
 	current_voltage = SI_VOLT_REG_OFFSET;
 	init_table();
 
+	//Set PB2/INT0 as Input
+	DDRB &= ~(1<<PB2);
+	//Enable Pull-Up for IRQ detection
+	PORTB |= (1<<PB2);
+	/// Falling edge on INT0 would be ideal. However for waking up from sleep modes, low level interrupt is required!
+	MCUCR &= ~(1<<ISC00 | 1<<ISC01);
+
 	master = 1;
 
 	sei();
@@ -160,9 +168,22 @@ void si_master(void)
 		setup_temp();
 		temp_setup = 1;
 	}
+
+	puts("si_master");
+
+	/// TODO: Check if rtc is already initialized!
+	pcf85063_init();
+	if(pcf85063_set_countdown(1) != USI_TWI_SUCCESS) {
+		puts("[RTC] set_countdown error");
+	}
+
 	usi_twi_result_t result;
 	while (true) {
-		_delay_ms(1000);
+		set_sleep_mode( SLEEP_MODE_PWR_DOWN );
+		sleep_enable();
+		sleep_cpu();
+		sleep_disable();
+
 		TCNT1 = 0;
 		// see if Mega woke up
 		result = i2c_write_bytes(MEGA_SL_ADDR_READY, &this_sleeptime, 1);
@@ -192,9 +213,9 @@ void si_master(void)
 			this_sleeptime--;
 		}
 		// if temperature changed adapt voltage
-		PORTA &= ~(1<<PA1);  // Enable i2c level shifter
+		PORTA &= ~(1<<PA1);  // Disable i2c level shifter
 		result = get_temp(&this_temperature);
-		PORTA |= (1<<PA1);  // Disable i2c level shifter
+		PORTA |= (1<<PA1);  // Enable i2c level shifter
 		
 		if (result != USI_TWI_SUCCESS) {
 			puts(REPORT_MASTER ":e1");
@@ -422,7 +443,17 @@ int main(void)
 	state = SI_INIT; //Beginning state
 	while (1) {
 		if (master) {
+			/// Enable INT0
+			GIMSK |= (1<<INT0);
+			// Clear interrupt flag
+			GIFR &= ~(1<<INTF0);
 			si_master();
+
+			/// Disable INT0
+			GIMSK &= ~(1<<INT0);
+			// Clear interrupt flag
+			GIFR &= ~(1<<INTF0);
+
 			master = 0;
 			this_altbyte = req_buffer->alt_byte; /* save alt_byte of the last recieved message*/
 		}
@@ -502,6 +533,14 @@ void reset_mega(void)
 	sei();
 	this_altbyte = 0;
 	SI_UNLOCK();
+}
+
+
+ISR(INT0_vect)
+{
+	PORTA &= ~(1<<PA1);  // Disbale i2c level shifter
+	pcf85063_reset_flags();
+	PORTA |= (1<<PA1);  // Enable i2c level shifter
 }
 
 ISR(TIM1_OVF_vect)
