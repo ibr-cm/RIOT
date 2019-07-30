@@ -172,10 +172,12 @@ void si_master(void)
 	puts("si_master");
 
 	/// TODO: Check if rtc is already initialized!
+	PORTA &= ~(1<<PA1);  // Disable i2c level shifter
 	pcf85063_init();
 	if(pcf85063_set_countdown(1) != USI_TWI_SUCCESS) {
 		puts("[RTC] set_countdown error");
 	}
+	PORTA |= (1<<PA1);  // Enable i2c level shifter
 
 	usi_twi_result_t result;
 	while (true) {
@@ -227,6 +229,7 @@ void si_master(void)
 		if ((get_entry().info != VTABLE_VALUE_IS_EMPTY)) {
 			if (current_voltage != get_entry().voltage) {
 				approach_voltage(get_entry().voltage);
+				printf("Voltage: %d\n", current_voltage);
 				uint8_t data[2] = {VSCALE_REG, current_voltage};
 				i2c_write_bytes(VSCALE_ADDR, data, sizeof(data));
 			}
@@ -466,7 +469,7 @@ int main(void)
 		case SI_IDLE:
 			/* does the atmega want to sleep */
 			if (req_buffer->rst_disable == 0xFF) {
-				this_sleeptime = req_buffer->rst_flags;
+				this_sleeptime = req_buffer->rst_flags - 1;
 				SI_REPLY_DEBUG_RESET();
 				master = 1;
 				break;
