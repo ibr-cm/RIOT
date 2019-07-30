@@ -24,7 +24,7 @@ void rtt_init(void) {
     /* 32768Hz / 1024 -> 32 ticks per second! */
     TCCR2B = (1 << CS22) | (1 << CS21) | (1 <<  CS20);
     /* Match register -> 1 interrupt every second */
-    OCR2A = 32;
+    OCR2A = RTT_FREQUENCY;
     /* Set count register to 0 */
     TCNT2 = 0;
     /* Enable interrupts () */
