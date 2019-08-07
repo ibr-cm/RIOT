@@ -81,6 +81,8 @@ static uint8_t early_frames = 0;
 volatile uint8_t count_overflows = 0; /*increased if counter overflows, reset if frame is recieved*/
 static uint8_t fact_default;
 
+static uint8_t rtc_is_init = 0;
+
 /* FUNCTION DECLARARTIONS */
 void approach_voltage(uint8_t value);
 void reset_mega(void);
@@ -171,20 +173,37 @@ void si_master(void)
 
 	puts("si_master");
 
-	/// TODO: Check if rtc is already initialized!
+	/// TODO: Check if rtc is already initialized! => Enable RTC if it is disabled
+
 	PORTA &= ~(1<<PA1);  // Disable i2c level shifter
-	pcf85063_init();
-	if(pcf85063_set_countdown(1) != USI_TWI_SUCCESS) {
-		puts("[RTC] set_countdown error");
+
+	if(!rtc_is_init) {
+		if(pcf85063_init() != USI_TWI_SUCCESS) {
+			//puts("[RTC] init failed");
+		} else {
+			rtc_is_init = 1;
+			if(pcf85063_set_countdown(1) != USI_TWI_SUCCESS) {
+				//puts("[RTC] set_countdown failed");
+			}
+		}
 	}
 	PORTA |= (1<<PA1);  // Enable i2c level shifter
 
+	/// Enable INT0
+	GIMSK |= (1<<INT0);
+	// Clear interrupt flag
+	GIFR &= ~(1<<INTF0);
+
+
 	usi_twi_result_t result;
 	while (true) {
+
 		set_sleep_mode( SLEEP_MODE_PWR_DOWN );
 		sleep_enable();
 		sleep_cpu();
 		sleep_disable();
+
+		//_delay_ms(1000);
 
 		TCNT1 = 0;
 		// see if Mega woke up
@@ -229,7 +248,7 @@ void si_master(void)
 		if ((get_entry().info != VTABLE_VALUE_IS_EMPTY)) {
 			if (current_voltage != get_entry().voltage) {
 				approach_voltage(get_entry().voltage);
-				printf("Voltage: %d\n", current_voltage);
+				//printf("Voltage: %d\n", current_voltage);
 				uint8_t data[2] = {VSCALE_REG, current_voltage};
 				i2c_write_bytes(VSCALE_ADDR, data, sizeof(data));
 			}
@@ -247,6 +266,11 @@ void si_master(void)
 		}
 	};
 	puts(REPORT_MASTER ":l");
+	//TODO: disable RTC
+	/// Disable INT0
+	GIMSK &= ~(1<<INT0);
+	// Clear interrupt flag
+	GIFR &= ~(1<<INTF0);
 	cli();
 	i2c_slave_init(SI_I2C_ADDR << 1); /*make the si the I2C slave*/
 	TCNT1 = 0;
@@ -444,22 +468,15 @@ void si_main(void)
 int main(void)
 {
 	state = SI_INIT; //Beginning state
+
 	while (1) {
 		if (master) {
-			/// Enable INT0
-			GIMSK |= (1<<INT0);
-			// Clear interrupt flag
-			GIFR &= ~(1<<INTF0);
 			si_master();
-
-			/// Disable INT0
-			GIMSK &= ~(1<<INT0);
-			// Clear interrupt flag
-			GIFR &= ~(1<<INTF0);
 
 			master = 0;
 			this_altbyte = req_buffer->alt_byte; /* save alt_byte of the last recieved message*/
 		}
+
 		switch (state) {
 		case SI_INIT:
 			si_init();
@@ -482,15 +499,33 @@ int main(void)
 			//MCUCR &= ~(1 << SE); /* clear sleep enable */
 
 			/*check if a new frame was recieved*/
-			if (req_buffer->alt_byte != this_altbyte)
+			if (req_buffer->alt_byte != this_altbyte) {
 				si_frame_received();
+			}
+			/*
+			else {
+				puts("sl:1");
+				set_sleep_mode( SLEEP_MODE_PWR_DOWN );
+				sleep_enable();
+				sleep_cpu();
+				sleep_disable();
+				puts("sl:0");
+			}
+			*/
 			break;
 			/*waits until frame is recieved. I2C slave mode is handled by interrupts.*/
+
 		case SI_TRANSIENT: /* transient, because you are between main and idle*/
 			si_transient();
 			if (!sent_hello) {
 				sent_hello = 1;
 				puts(REPORT_HELLO ":");
+				/**
+				TCCR1B = 0;
+				while(1) {
+					_delay_ms(10);
+				}
+				*/
 			}
 			state = SI_IDLE;
 			break;
@@ -538,12 +573,14 @@ void reset_mega(void)
 	SI_UNLOCK();
 }
 
-
 ISR(INT0_vect)
 {
-	PORTA &= ~(1<<PA1);  // Disbale i2c level shifter
-	pcf85063_reset_flags();
-	PORTA |= (1<<PA1);  // Enable i2c level shifter
+	PORTA &= ~(1<<PA1);  // Disable I2C level shifter
+	puts("int:0");
+	if(pcf85063_reset_flags() != USI_TWI_SUCCESS) {
+		puts("[RTC] Reset error");
+	}
+	PORTA |= (1<<PA1);  // Enable I2C level shifter
 }
 
 ISR(TIM1_OVF_vect)
