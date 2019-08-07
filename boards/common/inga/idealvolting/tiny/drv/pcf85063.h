@@ -38,4 +38,7 @@ usi_twi_result_t pcf85063_init(void);
 usi_twi_result_t pcf85063_set_countdown(uint8_t val);
 usi_twi_result_t pcf85063_reset_flags(void);
 
+usi_twi_result_t pcf85063_set_stop(void);
+usi_twi_result_t pcf85063_clear_stop(void);
+
 #endif

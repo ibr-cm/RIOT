@@ -14,8 +14,7 @@ usi_twi_result_t pcf85063_init(void) {
     }
 
     /// STOP
-    data[1] = 0b00100000;
-    res = i2c_write_bytes(PCF85063_ADDR, data, sizeof(data));
+    res = pcf85063_set_stop();
     if(res != USI_TWI_SUCCESS) {
         return res;
     }
@@ -23,8 +22,29 @@ usi_twi_result_t pcf85063_init(void) {
     _delay_ms(10);
 
     /// Clear STOP
+    res = pcf85063_clear_stop();
+
+    return res;
+}
+
+usi_twi_result_t pcf85063_set_stop(void) {
+    usi_twi_result_t res;
+    uint8_t data[2] = {0,0};
+
+    data[0] = PCF85063_REG_CONTROL_1;
+    data[1] = 0b00100000;
+    res = i2c_write_bytes(PCF85063_ADDR, data, 2);
+
+    return res;
+}
+
+usi_twi_result_t pcf85063_clear_stop(void) {
+    usi_twi_result_t res;
+    uint8_t data[2] = {0,0};
+
+    data[0] = PCF85063_REG_CONTROL_1;
     data[1] = 0b00000000;
-    res = i2c_write_bytes(PCF85063_ADDR, data, sizeof(data));
+    res = i2c_write_bytes(PCF85063_ADDR, data, 2);
 
     return res;
 }
