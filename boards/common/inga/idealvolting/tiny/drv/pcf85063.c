@@ -9,13 +9,20 @@ usi_twi_result_t pcf85063_init(void) {
     /// Software Reset
     uint8_t data[] = {PCF85063_REG_CONTROL_1, 0x58};
     res = i2c_write_bytes(PCF85063_ADDR, data, sizeof(data));
+    if(res != USI_TWI_SUCCESS) {
+        return res;
+    }
 
     /// STOP
     data[1] = 0b00100000;
     res = i2c_write_bytes(PCF85063_ADDR, data, sizeof(data));
+    if(res != USI_TWI_SUCCESS) {
+        return res;
+    }
 
     _delay_ms(10);
 
+    /// Clear STOP
     data[1] = 0b00000000;
     res = i2c_write_bytes(PCF85063_ADDR, data, sizeof(data));
 
@@ -42,7 +49,7 @@ usi_twi_result_t pcf85063_set_countdown(uint8_t val) {
 
     /// Set Mode
     data[0] = PCF85063_REG_TIMER_MODE;
-    data[1] = 0b00010111;
+    data[1] = 0b00010111; // 1Hz: 0b00010111 // 1/60Hz: 0b00011111
     res = i2c_write_bytes(PCF85063_ADDR, data, 2);
     if(res != USI_TWI_SUCCESS) {
         return res;
@@ -56,8 +63,6 @@ usi_twi_result_t pcf85063_set_countdown(uint8_t val) {
     if(res != USI_TWI_SUCCESS) {
         return res;
     }
-
-    /// ...
 
     pcf85063_reset_flags();
 
