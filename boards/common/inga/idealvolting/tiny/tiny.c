@@ -171,7 +171,7 @@ void si_master(void)
 		temp_setup = 1;
 	}
 
-	puts("si_master");
+	//puts("si_master");
 
 	/// TODO: Check if rtc is already initialized! => Enable RTC if it is disabled
 
@@ -230,7 +230,6 @@ void si_master(void)
 				--wake_attempts;
 			}
 		} else {
-			printf(REPORT_MASTER ":s %u\n", this_sleeptime); /*sleeptime is not over yet*/
 			this_sleeptime--;
 		}
 		// if temperature changed adapt voltage
@@ -245,10 +244,10 @@ void si_master(void)
 		}
 		this_temperature += SI_TEMP_OFFSET;
 		current_index = ((uint8_t) (this_temperature) >> 1);
+		printf("s: %d %d°C %u\n", current_index, this_temperature - SI_TEMP_OFFSET, this_sleeptime);
 		if ((get_entry().info != VTABLE_VALUE_IS_EMPTY)) {
 			if (current_voltage != get_entry().voltage) {
 				approach_voltage(get_entry().voltage);
-				//printf("Voltage: %d\n", current_voltage);
 				uint8_t data[2] = {VSCALE_REG, current_voltage};
 				i2c_write_bytes(VSCALE_ADDR, data, sizeof(data));
 			}
@@ -454,10 +453,11 @@ void si_main(void)
 	else
 		res_buffer->osccal = req_buffer->osccal;
 	SI_UNLOCK();
-	printf(REPORT_PERIODIC ":v=%u,t=%d,n=%u\n",
+	/*printf(REPORT_PERIODIC ":v=%u,t=%d,n=%u\n",
 				current_voltage,
 				this_temperature - SI_TEMP_OFFSET,
-				table_entries);
+				table_entries);*/
+	printf(REPORT_PERIODIC ":v=%u, n=%d\n", current_voltage, table_entries);
 }
 
 /**
@@ -576,9 +576,9 @@ void reset_mega(void)
 ISR(INT0_vect)
 {
 	PORTA &= ~(1<<PA1);  // Disable I2C level shifter
-	puts("int:0");
+	//puts("int:0");
 	if(pcf85063_reset_flags() != USI_TWI_SUCCESS) {
-		puts("[RTC] Reset error");
+		//puts("[RTC] Reset error");
 	}
 	PORTA |= (1<<PA1);  // Enable I2C level shifter
 }
