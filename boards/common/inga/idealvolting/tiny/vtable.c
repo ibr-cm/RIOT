@@ -34,6 +34,8 @@ void init_table(void)
 
 void create_table_entry(uint8_t voltage, uint8_t osccal)
 {
+	uint8_t temp = current_index << 1;
+	printf("c: %d %d°C\n", current_index, temp);
 	table[(current_index)].voltage = voltage;
 	table[(current_index)].osccal = osccal;
 	if (table[(current_index)].info != VTABLE_VALUE_IS_MEASURED) {

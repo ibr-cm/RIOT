@@ -2,6 +2,7 @@
 #define VTABLE_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define VTABLE_SIZE 51
 #define SI_PREDICTION_THRESHOLD 7
