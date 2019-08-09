@@ -35,7 +35,7 @@ void init_table(void)
 void create_table_entry(uint8_t voltage, uint8_t osccal)
 {
 	uint8_t temp = current_index << 1;
-	printf("c: %d %d°C\n", current_index, temp);
+	//printf("c: %d %d°C\n", current_index, temp);
 	table[(current_index)].voltage = voltage;
 	table[(current_index)].osccal = osccal;
 	if (table[(current_index)].info != VTABLE_VALUE_IS_MEASURED) {
@@ -53,7 +53,7 @@ void prediction_fill_table(double m_volt, double b_volt, double m_osc, double b_
 		if (table[index].info != VTABLE_VALUE_IS_MEASURED) {
 			table[index].voltage = round(m_volt * (double) index + b_volt);
 			table[index].osccal = round(m_osc * (double) index + b_osc);
-			table[index].info = VTABLE_VALUE_IS_PREDICTED;
+			table[index].info = VTABLE_VALUE_IS_MEASURED;
 		}
 	}
 }
@@ -107,6 +107,7 @@ void prediction(void)
 	} else {
 		table_entries = (uint8_t) n;
 	}
+	printf("Prediction constants: %lf ,%lf ,%lf ,%lf \n", m_volt, b_volt, m_osc, b_osc);
 
 #ifdef USE_EEPROM
 	/* Write characteristic curve to eeprom */

@@ -244,7 +244,7 @@ void si_master(void)
 		}
 		this_temperature += SI_TEMP_OFFSET;
 		current_index = ((uint8_t) (this_temperature) >> 1);
-		printf("s: %d %d°C %u\n", current_index, this_temperature - SI_TEMP_OFFSET, this_sleeptime);
+		//printf("s: %d %d°C %u\n", current_index, this_temperature - SI_TEMP_OFFSET, this_sleeptime);
 		if ((get_entry().info != VTABLE_VALUE_IS_EMPTY)) {
 			if (current_voltage != get_entry().voltage) {
 				approach_voltage(get_entry().voltage);
