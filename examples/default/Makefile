@@ -2,7 +2,7 @@
 APPLICATION = default
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= native
+BOARD ?= nucleo-l073rz
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
@@ -37,11 +37,18 @@ USEMODULE += ps
 # include and auto-initialize all available sensors
 USEMODULE += saul_default
 
+# at86rf215
+USEMODULE += at86rf215
+GNRC_NETIF_NUMOF := 2
+
+###### necessary (at86rf21% will be blocked.) ######
+NO_PSEUDOMODULES += at86rf215
+
 BOARD_PROVIDES_NETIF := acd52832 airfy-beacon b-l072z-lrwan1 cc2538dk fox \
         iotlab-m3 iotlab-a8-m3 lobaro-lorabox lsn50 mulle microbit native nrf51dk \
         nrf51dongle nrf52dk nrf52840dk nrf52840-mdk nrf6310 nucleo-f767zi \
         openmote-cc2538 pba-d-01-kw2x remote-pa remote-reva samr21-xpro \
-        spark-core telosb yunjia-nrf51822 z1
+        spark-core telosb yunjia-nrf51822 z1 nucleo-l073rz
 
 ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # Use modules for networking
