@@ -15,9 +15,6 @@
 #include "net/netdev.h"
 #include "net/netdev/ieee802154.h"
 
-/*** InPhase ***/
-#include "inphase_conf.h"
-
 #include "at86rf215.h"
 #include "at86rf215_netdev.h"
 #include "at86rf215_internal.h"
@@ -63,11 +60,6 @@ static void _irq_handler(void *arg)
 //	if(tmp & AT86RF215_BBCn_IRQS__RXFE_M) {
 //		puts("[rf215] irq_handler : Rx end.\n");
 //	}
-
-	if(sigSync == 1) {
-		sigSync = 0;
-		return;
-	}
 
 	//at86rf215_set_state(dd, AT86RF215_STATE_RF_RX);
 	//at86rf215_reg_write(dd, AT86RF215_REG__RF09_CMD, AT86RF215_STATE_RF_RX);
@@ -409,13 +401,6 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = sizeof(netopt_enable_t);
             break;
 
-		case NETOPT_IPS_START:
-			assert(max_len >= sizeof(netopt_enable_t));
-			//*((netopt_enable_t *)val) = at86rf2xx_cca(dev);
-			inphase_start(dev);
-			res = sizeof(netopt_enable_t);
-			break;
-
         default:
             res = -ENOTSUP;
             break;
@@ -637,7 +622,6 @@ static void _isr(netdev_t *netdev)
 //            if (!(dev->netdev.flags & AT86RF2XX_OPT_TELL_RX_END)) {
 //                return;
 //            }
-			inphase_isr(dev);
             netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
 			at86rf215_set_state(dev, AT86RF215_STATE_RF_RX);
 //		}
