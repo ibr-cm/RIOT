@@ -1,6 +1,6 @@
 # flash tool configuration
 export OFLAGS = -j .text -j .data -O ihex
-
+FLASHFILE ?= $(HEXFILE)
 # set default port depending on operating system
 PORT_LINUX ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
 # setup serial terminal
