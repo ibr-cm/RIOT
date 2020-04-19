@@ -412,7 +412,8 @@ void usage(poptContext poptc, int exitcode, char *error, char *addl)
 
 void parse_options(int argc, const char **argv, struct config_t *cfg)
 {
-    char rc, *tmp;
+    int rc;
+    char *tmp;
     poptContext poptc;
 
     struct poptOption options[] = {
@@ -440,9 +441,19 @@ void parse_options(int argc, const char **argv, struct config_t *cfg)
 
     cfg->mode = MODE_RESET;
 
+    printf("A\n");
     poptc = poptGetContext(NULL, argc, argv, options, 0);
-
-    while ((rc = poptGetNextOpt(poptc)) >= 0) ;
+    printf("%p\n", poptc);
+    printf("B\n");
+	int i = 0;
+    while ((rc = poptGetNextOpt(poptc)) >= 0) {
+	    i++;
+	    printf("OPT: %d\n", rc);
+	    if(i > 1000) {
+		    exit(-1);
+	    }
+    }
+    printf("C\n");
 
     if (poptPeekArg(poptc) != NULL) {
         poptPrintUsage(poptc, stderr, 0);
@@ -514,11 +525,16 @@ int main(int argc, const char **argv)
         exit(EXIT_FAILURE);
     }
 
+    printf("Hi\n");
+
     parse_options(argc, argv, cfg);
 
     VERBOSE("Config: path: %s, serial: %s, id: %s\n", cfg->usb.device_path, cfg->usb.device_serial, cfg->usb.device_id);
+    
+    printf("Hi2\n");
 
     if (cfg->mode == MODE_RESET) {
+
         inga_reset(cfg);
     }
     else if (cfg->mode == MODE_UPDATE_EEPROM) {
