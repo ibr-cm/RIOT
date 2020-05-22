@@ -41,7 +41,7 @@ BOARD_PROVIDES_NETIF := acd52832 adafruit-clue airfy-beacon atmega256rfr2-xpro \
         nucleo-f207zg nucleo-f767zi openmote-b openmote-cc2538 pba-d-01-kw2x remote-pa \
         remote-reva ruuvitag samr21-xpro samr30-xpro spark-core telosb thingy52 yunjia-nrf51822 z1 \
         frdm-kw41z phynode-kw41z usb-kw41z openlabs-kw41z-mini openlabs-kw41z-mini-256kib \
-        inga_red inga_white inga_blue inga_green
+        inga_red inga_white inga_blue inga_green inga_test
 
 ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # Use modules for networking
