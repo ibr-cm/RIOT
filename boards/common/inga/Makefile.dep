@@ -1,5 +1,0 @@
-ifneq (,$(filter at86rf233 at86rf231,$(USEMODULE)))
-  USEMODULE += atmega_pcint3
-  $(info pcint enabled)
-endif
-
