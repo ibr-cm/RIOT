@@ -1,5 +1,8 @@
-ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
-  USEMODULE += at86rf231
-endif
+USEMODULE += boards_common_atmega
 
-include $(RIOTBOARD)/common/inga/Makefile.dep
+ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
+  USEMODULE += at86rf233
+endif
+# USEMODULE += gnrc
+
+include $(RIOTCPU)/$(CPU)/Makefile.dep

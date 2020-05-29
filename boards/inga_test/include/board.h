@@ -1,23 +1,9 @@
 /*
- * Copyright (C) 2014 Freie Universität Berlin, Hinnerk van Bruinehsen
- *               2016 Laurent Navet <laurent.navet@gmail.com>
- *               2019 Otto-von-Guericke-Universität Magdeburg
+ * Copyright (C) 2016 Robert Hartung <hartung@ibr.cs.tu-bs.de>
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
  * directory for more details.
- */
-
-/**
- * @ingroup     boards_atmega1284p
- * @{
- *
- * @file
- * @brief       Board specific definitions for the standalone ATmega1284P "board"
- *
- * @author      Marian Buschsieweke <marian.buschsieweke@ovgu.de>
- * @author      Hinnerk van Bruinehsen <h.v.bruinehsen@fu-berlin.de>
- * @author      Laurent Navet <laurent.navet@gmail.com>
  */
 
 #ifndef BOARD_H

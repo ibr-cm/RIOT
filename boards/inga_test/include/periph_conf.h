@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Otto-von-Guericke-Universität Magdeburg
+ * Copyright (C) 2017 TU Braunschweig, IBR
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -7,15 +7,15 @@
  */
 
 /**
- * @ingroup boards_atmega1284p
+ * @ingroup     boards_inga_red
  * @{
  *
  * @file
- * @brief   Peripheral MCU configuration for the ATmega1284p standalone "board"
+ * @brief       Peripheral MCU configuration for the INGA red board
  *
- * @author  Marian Buschsieweke <marian.buschsieweke@ovgu.de>
+ * @author      Robert Hartung <hartung@ibr.cs.tu-bs.de>
  */
-
+ 
 #ifndef PERIPH_CONF_H
 #define PERIPH_CONF_H
 
