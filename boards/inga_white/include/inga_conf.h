@@ -1,17 +1,23 @@
 /*
- * Copyright (C) 2016 Robert Hartung <hartung@ibr.cs.tu-bs.de>
+ * Copyright (C) 2017 TU Braunschweig, IBR
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
  * directory for more details.
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+/**
+ * @ingroup     boards_inga_green
+ * @{
+ *
+ * @file
+ * @brief       Peripheral MCU configuration for the INGA white board
+ *
+ * @author      Robert Hartung <hartung@ibr.cs.tu-bs.de>
+ */
 
-#include "cpu.h"
-#include "periph_conf.h"
-#include "periph/gpio.h"
+#ifndef INGA_CONF_H
+#define INGA_CONF_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,31 +55,6 @@ extern "C" {
 /** @} */
 
 
-/**
- * @name    STDIO configuration
- *
- * As the CPU is too slow to handle 115200 baud, we set the default
- * baudrate to 9600 for this board
- * @{
- */
-#define STDIO_UART_BAUDRATE (9600U)
-/** @} */
-
-/**
- * @name    xtimer configuration values
- * @{
- */
-#define XTIMER_WIDTH                (16)
-#define XTIMER_BACKOFF                    (40)
-#define XTIMER_DEV                        (0)
-#define XTIMER_CHAN                       (0)
-#if CLOCK_CORECLOCK > 4000000UL
-#define XTIMER_HZ                   (CLOCK_CORECLOCK / 64)
-#else
-#define XTIMER_HZ                   (CLOCK_CORECLOCK / 8)
-#endif
-
-/** @} */
 
 /**
  * @name    User LED pin definitions and handlers
@@ -91,6 +72,7 @@ extern "C" {
 #define LED2_TOGGLE         (PORTD ^= LED2_MASK)
 /** @} */
 
+
 /**
  * @name    User button pin definitions
  */
@@ -100,14 +82,68 @@ extern "C" {
 
 
 /**
- * @brief   Initialize board specific hardware, including clock, LEDs and std-IO
+ * The INGA has exactly 1 I2C interface
+ * @{
  */
-void board_init(void);
+#define I2C_NUMOF           (1U)
+
+#define I2C_0_EN            (1)
+#define I2C_0_SCL           GPIO_PIN(PORT_C, 0)
+#define I2C_0_SDA           GPIO_PIN(PORT_C, 1)
+#define I2C_BUS_SPEED 		I2C_SPEED_NORMAL
+
+
+/**
+ * INGA ADXL345 configuration
+ * @{
+ */
+#define ADXL345_PARAM_ADDR  ADXL345_ADDR_53 /* (0xA6>>1) */
+#define ADXL345_PARAM_I2C   (I2C_DEV(0))
+#define ADXL345_PARAMS              { .i2c    = ADXL345_PARAM_I2C,       \
+                                      .addr   = ADXL345_PARAM_ADDR,      \
+                                      .offset = ADXL345_PARAM_OFFSET,    \
+                                      .range  = ADXL345_RANGE_2G,        \
+                                      .rate   = ADXL345_RATE_100HZ,      \
+                                      .full_res = ADXL345_PARAM_FULL_RES }
+
+/** @} */
+
+
+
+/**
+ * Pin Change Interrupt configuration
+ * @{
+ */
+#define AVR_USE_PCINT       (1)
+/** @} */
+
+
+
+/**
+ * INGA L3G4200D configuration
+ * @{
+ */
+#define L3G4200D_PARAM_ADDR (0x69) /* 0xD2>>1 */
+#define L3G4200D_PARAM_I2C   (I2C_DEV(0))
+#define L3G4200D_PARAM_MODE L3G4200D_MODE_100_25
+
+
+
+/**
+ * INGA BMP085 configuration
+ * @{
+ */
+#define BMP180_PARAM_ADDR (0x77) /* 0xEE>>1 */
+#define BMP180_PARAM_I2C   (I2C_DEV(0))
+#define BMP180_PARAMS  {.i2c_dev = BMP180_PARAM_I2C, \
+						.i2c_addr = BMP180_PARAM_ADDR, \
+						.oversampling = BMP180_STANDARD }
+/** @} */
+
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* BOARD_H */
-/** @} */
-
+#endif /* INGA_CONF_H */

@@ -1,8 +1,15 @@
-USEMODULE += boards_common_atmega
+include $(RIOTBOARD)/atmega1284p/Makefile.dep 
+
+# USEMODULE += board
 
 ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
   USEMODULE += at86rf233
 endif
 # USEMODULE += gnrc
 
-include $(RIOTCPU)/$(CPU)/Makefile.dep
+ifneq (,$(filter at86rf233 at86rf231,$(USEMODULE)))
+  USEMODULE += atmega_pcint3
+  $(info pcint enabled)
+endif
+
+# include $(RIOTCPU)/$(CPU)/Makefile.dep

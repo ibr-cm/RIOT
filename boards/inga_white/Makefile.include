@@ -1,13 +1,7 @@
+include $(RIOTBOARD)/atmega1284p/Makefile.include
+
 # configure the terminal program
 PORT_LINUX          ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
-PORT_DARWIN         ?= $(firstword $(sort $(wildcard /dev/tty.usbmodem*)))
-BAUD                ?= 9600
-ATMEGA328P_CLOCK    ?=
-include $(RIOTMAKE)/tools/serial.inc.mk
-
-ifneq (,$(ATMEGA1284P_CLOCK))
-  CFLAGS += -DCLOCK_CORECLOCK=$(ATMEGA1284P_CLOCK)
-endif
 
 # flash tool configuration
 export OFLAGS = -j .text -j .data -O ihex
@@ -15,13 +9,5 @@ export OFLAGS = -j .text -j .data -O ihex
 # New flash tool
 include $(RIOTMAKE)/tools/inga_tool.inc.mk
 
-# setup the boards dependencies
-include $(RIOTBOARD)/$(BOARD)/Makefile.dep
-include $(RIOTCPU)/$(CPU)/Makefile.dep
-
-# dont include atmega/Makefile.include. so we can use inga_tool
-# include $(RIOTBOARD)/common/atmega/Makefile.include
-
-INCLUDES += -I$(RIOTBOARD)/common/atmega/include
-
+INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
 

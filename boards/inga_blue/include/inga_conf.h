@@ -7,31 +7,56 @@
  */
 
 /**
- * @ingroup     boards_inga_green
+ * @ingroup     boards_inga_blue
  * @{
  *
  * @file
- * @brief       Peripheral MCU configuration for the INGA green board
+ * @brief       Peripheral MCU configuration for the INGA blue board
  *
  * @author      Robert Hartung <hartung@ibr.cs.tu-bs.de>
  */
 
-#ifndef PERIPH_CONF_H
-#define PERIPH_CONF_H
+#ifndef INGA_CONF_H
+#define INGA_CONF_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
 /**
- * @name    Clock configuration
+ * @brief   Use the UART 1 for STDIO on this board
+ */
+#define STDIO_UART_DEV       (UART_DEV(0))
+/**
+ * Context swap defines
+ * Setup to use PA0 which is pin change interrupt 0 (PCINT0)
+ * This emulates a software triggered interrupt
+ */
+#define AVR_CONTEXT_SWAP_INIT do { \
+            DDRA |= (1 << DDA0); \
+            PCICR |= (1 << PCIE0); \
+            PCMSK0 |= (1 << PCINT0); \
+} while (0)
+#define AVR_CONTEXT_SWAP_INTERRUPT_VECT         PCINT0_vect
+#define AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM     PCINT0_vect_num
+#define AVR_CONTEXT_SWAP_TRIGGER                PORTA ^= (1 << PA0)
+
+
+/**
+ * @name    at86rf233 configuration
  * @{
  */
-#ifndef CLOCK_CORECLOCK
-/* Using 8MHz internal oscillator as default clock source */
-#define CLOCK_CORECLOCK     (8000000UL)
-#endif
+#define AT86RF2XX_PARAMS {.spi = SPI_DEV(0), \
+                                .spi_clk = SPI_CLK_5MHZ, \
+                                .cs_pin = GPIO_PIN(PORT_B, 4),\
+                                .int_pin = GPIO_PIN(PORT_D, 6),\
+                                .sleep_pin = GPIO_PIN(PORT_B, 3),\
+                                .reset_pin = GPIO_PIN(PORT_B, 1)}
 /** @} */
+
+/* the blue inga does not have any LEDs or buttons */
+
 
 /**
  * The INGA has exactly 1 I2C interface
@@ -93,10 +118,9 @@ extern "C" {
 						.oversampling = BMP180_STANDARD }
 /** @} */
 
+
 #ifdef __cplusplus
 }
 #endif
 
-#include "periph_conf_atmega_common.h"
-
-#endif /* PERIPH_CONF_H */
+#endif /* INGA_CONF_H */

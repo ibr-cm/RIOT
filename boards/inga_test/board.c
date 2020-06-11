@@ -19,6 +19,7 @@
  */
 
 #include "cpu.h"
+#include "inga_conf.h"
 #include "board.h"
 #include "stdio_uart.h"
 #include "avr/io.h"
