@@ -9,5 +9,5 @@ export OFLAGS = -j .text -j .data -O ihex
 # New flash tool
 include $(RIOTMAKE)/tools/inga_tool.inc.mk
 
-INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
+# INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
 
