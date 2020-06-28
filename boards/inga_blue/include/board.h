@@ -75,29 +75,7 @@ extern "C" {
 
 /** @} */
 
-/**
- * @name    User LED pin definitions and handlers
- */
-#define LED1_PIN            GPIO_PIN(PORT_D, 5)
-#define LED1_MASK           (1 << 5)
-#define LED1_OFF            (PORTD |= LED1_MASK)
-#define LED1_ON             (PORTD &= ~LED1_MASK)
-#define LED1_TOGGLE         (PORTD ^= LED1_MASK)
-
-#define LED2_PIN            GPIO_PIN(PORT_D, 7)
-#define LED2_MASK           (1 << 7)
-#define LED2_OFF            (PORTD |= LED2_MASK)
-#define LED2_ON             (PORTD &= ~LED2_MASK)
-#define LED2_TOGGLE         (PORTD ^= LED2_MASK)
-/** @} */
-
-/**
- * @name    User button pin definitions
- */
-#define BTN0_PIN            GPIO_PIN(1,2) /* PB2 */
-#define BTN0_MODE           GPIO_IN
-/** @} */
-
+// inga_blue has no leds or buttons
 
 /**
  * @brief   Initialize board specific hardware, including clock, LEDs and std-IO

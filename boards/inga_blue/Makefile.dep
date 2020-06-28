@@ -12,4 +12,8 @@ ifneq (,$(filter at86rf233 at86rf231,$(USEMODULE)))
   $(info pcint enabled)
 endif
 
-# include $(RIOTCPU)/$(CPU)/Makefile.dep
+ifneq (,$(filter saul_default,$(USEMODULE)))
+  USEMODULE += l3g4200d
+  USEMODULE += adxl345
+  USEMODULE += bmp180
+endif

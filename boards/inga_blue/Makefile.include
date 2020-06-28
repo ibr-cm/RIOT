@@ -10,5 +10,5 @@ export FLASHER = avrdude
 # JTAG ICE mkII
 export FFLAGS = -c jtag2isp -p m1284p -P usb -u -U flash:w:$(HEXFILE)
 
-INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
+# INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
 
