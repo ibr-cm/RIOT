@@ -75,7 +75,7 @@ extern "C" {
 
 /** @} */
 
-// inga_blue has no leds or buttons
+/* the blue inga does not have any LEDs or buttons */
 
 /**
  * @brief   Initialize board specific hardware, including clock, LEDs and std-IO
