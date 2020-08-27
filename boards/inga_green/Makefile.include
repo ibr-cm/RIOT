@@ -6,8 +6,12 @@ PORT_LINUX          ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
 # flash tool configuration
 export OFLAGS = -j .text -j .data -O ihex
 
-# New flash tool
-include $(RIOTMAKE)/tools/inga_tool.inc.mk
-
+FLASHFILE ?= $(HEXFILE)
+# export FLASHER = avrdude
+# JTAG ICE mkII
+# export FFLAGS = -c inga -p m1284p -P usb:ft0 -u -U flash:w:$(HEXFILE) -vvv
+PROGRAMMER = inga
+FFLAGS_EXTRA ?= -P usb:ft0 -u 
+# sudo avrdude -c inga -p m1284p -P usb:ft0 -U flash:w:main.hex -vvv
 # INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
 
