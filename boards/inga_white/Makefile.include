@@ -1,0 +1,13 @@
+include $(RIOTBOARD)/atmega1284p/Makefile.include
+
+# configure the terminal program
+PORT_LINUX          ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
+
+# flash tool configuration
+export OFLAGS = -j .text -j .data -O ihex
+
+# New flash tool
+include $(RIOTMAKE)/tools/inga_tool.inc.mk
+
+# INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
+

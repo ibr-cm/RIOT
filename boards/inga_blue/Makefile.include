@@ -1,0 +1,14 @@
+include $(RIOTBOARD)/atmega1284p/Makefile.include
+
+# configure the terminal program
+PORT_LINUX          ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
+
+# flash tool configuration
+export OFLAGS = -j .text -j .data -O ihex
+
+export FLASHER = avrdude
+# JTAG ICE mkII
+export FFLAGS = -c jtag2isp -p m1284p -P usb -u -U flash:w:$(HEXFILE)
+
+# INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
+
