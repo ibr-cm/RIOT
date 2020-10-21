@@ -1,7 +1,7 @@
 include $(RIOTBOARD)/atmega1284p/Makefile.dep 
 
 ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
-  USEMODULE += at86rf233
+  USEMODULE += at86rf231
 endif
 
 ifneq (,$(filter at86rf233 at86rf231,$(USEMODULE)))
@@ -11,6 +11,6 @@ endif
 
 ifneq (,$(filter saul_default,$(USEMODULE)))
   USEMODULE += l3g4200d
-  USEMODULE += adxl345
+  # USEMODULE += adxl345
   USEMODULE += bmp180
 endif
