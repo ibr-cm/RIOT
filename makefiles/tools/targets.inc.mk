@@ -59,3 +59,8 @@ $(RIOTTOOLS)/uf2/uf2conv.py: $(RIOTTOOLS)/uf2/Makefile
 	@echo "[INFO] uf2conv.py not found - fetching it from GitHub now"
 	CC= CFLAGS= $(MAKE) -C $(RIOTTOOLS)/uf2
 	@echo "[INFO] uf2conv.py successfully fetched!"
+	
+$(RIOTTOOLS)/inga_tool/inga_tool: $(RIOTTOOLS)/inga_tool/Makefile
+	@echo "[INFO] inga_tool binary not found - building it from source now"
+	CC= CFLAGS= $(MAKE) -C $(RIOTTOOLS)/inga_tool
+	@echo "[INFO] edbg binary successfully built!"
