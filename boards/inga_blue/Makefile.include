@@ -12,4 +12,3 @@ PROGRAMMER = jtag2isp
 FFLAGS_EXTRA =  usb -u 
 
 # INCLUDES += -I$(RIOTBOARD)/atmega1284p/include
-
