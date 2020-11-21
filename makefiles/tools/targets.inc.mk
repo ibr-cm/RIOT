@@ -48,4 +48,4 @@ $(RIOTTOOLS)/flatc/flatc: $(RIOTTOOLS)/flatc/Makefile
 $(RIOTTOOLS)/inga_tool/inga_tool: $(RIOTTOOLS)/inga_tool/Makefile
 	@echo "[INFO] inga_tool binary not found - building it from source now"
 	CC= CFLAGS= $(MAKE) -C $(RIOTTOOLS)/inga_tool
-	@echo "[INFO] edbg binary successfully built!"
+	@echo "[INFO] inga_tool binary successfully built!"
