@@ -1,0 +1,14 @@
+
+
+
+PROGRAMMER = bmp
+BMP_OPTIONS = "--connect-srst"
+
+
+# we use shared STM32 configuration snippets
+INCLUDES += -I$(RIOTBOARD)/common/stm32/include
+
+# Setup of programmer and serial is shared between STM32 based boards
+include $(RIOTMAKE)/boards/stm32.inc.mk
+
+
