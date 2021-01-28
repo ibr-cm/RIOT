@@ -7,11 +7,12 @@
  */
 
 /**
- * @ingroup     boards_nucleo-f411re
+ * @ingroup     boards_ibr-node
  * @{
  *
  * @file
- * @name        Peripheral MCU configuration for the nucleo-f411re board
+ * @name        Peripheral MCU configuration for the ibr-node board
+ *              Adapted from nucleo-f411re configuration
  *
  * @author      Alexandre Abadie <alexandre.abadie@inria.fr>
  */
@@ -190,6 +191,16 @@ static const adc_conf_t adc_config[] = {
 
 #define ADC_NUMOF           ARRAY_SIZE(adc_config)
 /** @} */
+
+
+
+
+#define AT86RF215_PARAM_SPI         (SPI_DEV(0))
+#define AT86RF215_PARAM_CS         GPIO_PIN(PORT_B, 6)
+#define AT86RF215_PARAM_INT        GPIO_PIN(PORT_A, 8)
+#define AT86RF215_PARAM_RESET      GPIO_PIN(PORT_B, 5)
+
+
 
 #ifdef __cplusplus
 }
