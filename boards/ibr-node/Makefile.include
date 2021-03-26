@@ -2,7 +2,13 @@
 
 
 PROGRAMMER = bmp
-BMP_OPTIONS = "--connect-srst"
+BMP_OPTIONS := --connect-srst
+
+
+ifdef SERIAL
+BMP_OPTIONS := $(BMP_OPTIONS) --serial "$(SERIAL)"
+#$(error BMP_OPTIONS=$(BMP_OPTIONS))
+endif
 
 
 # we use shared STM32 configuration snippets
