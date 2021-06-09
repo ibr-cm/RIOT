@@ -1,0 +1,23 @@
+
+export FLASHER = avrdude
+# JTAG ICE mkII
+PROGRAMMER ?= jtag2isp
+export FFLAGS = -c $(PROGRAMMER) -p m256rfr2 -P usb -u -U flash:w:$(HEXFILE)
+
+export INCLUDES += -I$(RIOTBOARD)/$(BOARD)/include/
+
+# setup the boards dependencies
+include $(RIOTBOARD)/$(BOARD)/Makefile.dep
+
+## the cpu to build for
+export CPU = atmega256rfr2
+
+# flash tool configuration
+export OFLAGS = -j .text -j .data -O ihex
+
+# set default port depending on operating system
+PORT_LINUX ?= $(firstword $(sort $(wildcard /dev/ttyUSB*)))
+# setup serial terminal
+export BAUD ?= 9600
+include $(RIOTMAKE)/tools/serial.inc.mk
+
