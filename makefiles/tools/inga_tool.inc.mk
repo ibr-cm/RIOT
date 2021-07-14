@@ -1,5 +1,7 @@
 FLASHER = $(RIOTBASE)/dist/tools/inga_tool/inga_tool
+
+AVRDUDE_PROGRAMMER = avr109
 # Using the FFLAGS here to append the port for the inga_tool and avrdude
 FLASHFILE ?= $(HEXFILE)
-export FFLAGS = -d $(PORT) -r && avrdude -c avr109 -p m1284p -P $(PORT) -b 230400 -u -U flash:w:$(FLASHFILE)
+FFLAGS = -d $(PORT) -r && avrdude -b 230400 -u
 FLASHDEPS += $(RIOTBASE)/dist/tools/inga_tool/inga_tool
