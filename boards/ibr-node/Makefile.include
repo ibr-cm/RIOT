@@ -1,5 +1,5 @@
 
-
+BAUD                ?= 19200
 
 PROGRAMMER = bmp
 BMP_OPTIONS := --connect-srst
