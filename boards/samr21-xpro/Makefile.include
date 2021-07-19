@@ -1,1 +1,4 @@
+
+BAUD                ?= 19200
+
 include $(RIOTMAKE)/boards/sam0.inc.mk

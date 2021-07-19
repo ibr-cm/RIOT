@@ -30,6 +30,14 @@ extern "C" {
 #endif
 
 /**
+ * @name    STDIO configuration
+ *
+ * Setting it down for our experiments.
+ * @{
+ */
+#define STDIO_UART_BAUDRATE (19200U)
+
+/**
  * @name    xtimer configuration
  * @{
  */
