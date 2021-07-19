@@ -16,7 +16,7 @@ else ifneq (,$(findstring saml21,$(CPU_MODEL)))
 else ifneq (,$(findstring saml22,$(CPU_MODEL)))
   EDBG_DEVICE_TYPE = saml22
 else ifneq (,$(findstring samr21,$(CPU_MODEL)))
-  EDBG_DEVICE_TYPE = samr21
+  EDBG_DEVICE_TYPE = atmel_cm0p
 else ifneq (,$(findstring samr30,$(CPU_MODEL)))
   EDBG_DEVICE_TYPE = samr30
 else ifneq (,$(findstring samr34,$(CPU_MODEL)))
