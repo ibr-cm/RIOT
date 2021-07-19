@@ -1,1 +1,3 @@
+BAUD                ?= 19200
+
 include $(RIOTBOARD)/common/nrf52xxxdk/Makefile.include
