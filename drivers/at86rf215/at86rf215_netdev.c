@@ -198,8 +198,12 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 
     if (info != NULL) {
         netdev_ieee802154_rx_info_t *radio_info = info;
-        /* radio drops invalid flags, so all received flags are crc valid by default! */
-        radio_info->crc_valid = 1;
+        /* get FCSOK Bit in reg BBCn_PC */
+        uint8_t pc_state;
+        uint8_t FCSOK_MASK = 1 << 5;
+        at86rf215_reg_read_bytes(dev, dev->BBC->RG_PC, &pc_state, sizeof(pc_state));
+        radio_info->crc_valid = (pc_state & FCSOK_MASK);
+
         radio_info->rssi = (int8_t) at86rf215_reg_read(dev, dev->RF->RG_EDV);
     }
 
