@@ -200,10 +200,14 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         uint8_t rssi = 0;
         netdev_ieee802154_rx_info_t *radio_info = info;
 
+
+
 #if defined(MODULE_AT86RF231) || defined(MODULE_AT86RF232) || defined(MODULE_AT86RF233)
         at86rf2xx_fb_read(dev, &(radio_info->lqi), 1);
         at86rf2xx_fb_stop(dev);
         rssi = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
+        //check if CRC is valid
+        radio_info->crc_valid = ( at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_RSSI) & AT86RF2XX_PHY_RSSI_MASK__RX_CRC_VALID );
 #else
         at86rf2xx_fb_read(dev, &(radio_info->lqi), 1);
         at86rf2xx_fb_read(dev, &(rssi), 1);
