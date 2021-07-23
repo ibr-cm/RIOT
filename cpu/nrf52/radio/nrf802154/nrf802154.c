@@ -281,6 +281,11 @@ static int _recv(netdev_t *dev, void *buf, size_t len, void *info)
 
     size_t pktlen = (size_t)rxbuf[0] - IEEE802154_FCS_LEN;
 
+	//Copy RSSI and CRC over to info struct
+	netdev_ieee802154_rx_info_t *radio_info = info;
+	radio_info->rssi = NRF_RADIO->RSSISAMPLE;
+	radio_info->crc_valid = NRF_RADIO->CRCSTATUS;
+
     /* check if packet data is readable */
     if (!(_state & NRF_RX_COMPLETE)) {
         DEBUG("[nrf802154] recv: no packet data available\n");
@@ -386,11 +391,8 @@ void isr_radio(void)
         uint8_t state = (uint8_t)NRF_RADIO->STATE;
         switch(state) {
             case RADIO_STATE_STATE_RxIdle:
-                /* only process packet if event callback is set and CRC is valid */
-                if ((nrf802154_dev.netdev.event_callback) &&
-                    (NRF_RADIO->CRCSTATUS == 1) &&
-                    (netdev_ieee802154_dst_filter(&nrf802154_dev,
-                                                  &rxbuf[1]) == 0)) {
+                /* only process packet if event callback is set*/
+                if ((nrf802154_dev.netdev.event_callback)) {
                     _state |= NRF_RX_COMPLETE;
                 }
                 else {
