@@ -216,6 +216,8 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         uint8_t ed = 0;
         netdev_ieee802154_rx_info_t *radio_info = info;
         at86rf2xx_fb_read(dev, &(radio_info->lqi), 1);
+        //check if CRC is valid
+        radio_info->crc_valid = ( at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_RSSI) & AT86RF2XX_PHY_RSSI_MASK__RX_CRC_VALID );
 
 #if defined(MODULE_AT86RF231) || defined(MODULE_AT86RFA1) || defined(MODULE_AT86RFR2)
         /* AT86RF231 does not provide ED at the end of the frame buffer, read
