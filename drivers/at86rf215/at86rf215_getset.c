@@ -272,8 +272,10 @@ void at86rf215_set_option(at86rf215_t *dev, uint16_t option, bool state)
         case AT86RF215_OPT_PROMISCUOUS:
             if (state) {
                 at86rf215_reg_or(dev, dev->BBC->RG_AFC0, AFC0_PM_MASK);
+                at86rf215_reg_and(dev, dev->BBC->RG_PC, ~PC_FCSFE_MASK);
             } else {
                 at86rf215_reg_and(dev, dev->BBC->RG_AFC0, ~AFC0_PM_MASK);
+                at86rf215_reg_or(dev, dev->BBC->RG_PC, PC_FCSFE_MASK);
             }
 
             break;
