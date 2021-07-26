@@ -29,6 +29,10 @@
 extern "C" {
 #endif
 
+#ifndef STDIO_UART_BAUDRATE
+#define STDIO_UART_BAUDRATE               (19200)
+#endif
+
 /**
  * @name    xtimer configuration
  * @{

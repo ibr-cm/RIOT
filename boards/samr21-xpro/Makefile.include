@@ -5,4 +5,7 @@ export CPU_MODEL = samr21g18a
 # set edbg device type
 EDBG_DEVICE_TYPE = atmel_cm0p
 
+# setup serial terminal
+export BAUD ?= 19200
+
 include $(RIOTMAKE)/boards/sam0.inc.mk
