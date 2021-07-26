@@ -1,3 +1,6 @@
 export CPU_MODEL = nrf52840xxaa
 
+# setup serial terminal
+export BAUD ?= 19200
+
 include $(RIOTBOARD)/common/nrf52xxxdk/Makefile.include
