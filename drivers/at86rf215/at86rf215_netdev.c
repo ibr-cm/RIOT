@@ -1163,7 +1163,6 @@ static void _isr(netdev_t *netdev)
 
         if (rx_ack_req) {
             dev->state = AT86RF215_STATE_RX_SEND_ACK;
-            break;
         }
 
         _set_idle(dev);
