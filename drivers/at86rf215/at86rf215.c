@@ -318,7 +318,7 @@ int at86rf215_tx_exec(at86rf215_t *dev)
         dev->flags |= AT86RF215_OPT_CCA_PENDING;
     }
 
-    if (dev->state == AT86RF215_STATE_IDLE) {
+    if (dev->state == AT86RF215_STATE_IDLE || dev->state == AT86RF215_STATE_RX_SEND_ACK) {
         at86rf215_rf_cmd(dev, CMD_RF_TXPREP);
     } else {
         DEBUG("[at86rf215] will TX after %s\n", at86rf215_sw_state2a(dev->state));
