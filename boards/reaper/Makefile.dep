@@ -1,0 +1,15 @@
+include $(RIOTBOARD)/atmega1284p/Makefile.dep 
+
+ifneq (,$(filter netdev_default gnrc_netdev_default,$(USEMODULE)))
+  USEMODULE += at86rf233
+endif
+
+ifneq (,$(filter at86rf233 at86rf231,$(USEMODULE)))
+  USEMODULE += atmega_pcint3
+  $(info pcint enabled)
+endif
+
+ifneq (,$(filter idealvolting,$(USEMODULE)))
+  FEATURES_REQUIRED += periph_i2c_slave periph_rtt
+  USEMODULE += max541x
+endif
