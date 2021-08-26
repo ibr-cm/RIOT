@@ -1,9 +1,10 @@
 #include "sram_undervolting.h"
 #include <avr/sleep.h>
+#include "uv_periph.h"
 
 //#define ACTIVATE_VERSION_2 (0)
 
-const pin_t uv_irq_pins[] = {
+const gpio_t uv_irq_pins[] = {
     IIF_SIG,
 };
 
