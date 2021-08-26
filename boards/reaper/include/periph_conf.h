@@ -19,7 +19,7 @@
 #ifndef PERIPH_CONF_H_
 #define PERIPH_CONF_H_
 
-#include "periph_conf_atmega_common.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,13 +35,29 @@ extern "C" {
 #endif
 
 /**
+ * The INGA has exactly 1 I2C interface
+ * @{
+ */
+#define I2C_NUMOF           (1U)
+
+#define I2C_0_EN            (1)
+#define I2C_0_SCL           GPIO_PIN(PORT_C, 0)
+#define I2C_0_SDA           GPIO_PIN(PORT_C, 1)
+#define I2C_BUS_SPEED 		I2C_SPEED_NORMAL
+
+
+
+/**
  * Pin Change Interrupt configuration
  * @{
  */
 #define AVR_USE_PCINT       (1)
 
+
 #ifdef __cplusplus
 }
 #endif
+
+#include "periph_conf_atmega_common.h"
 
 #endif /* PERIPH_CONF_H_ */

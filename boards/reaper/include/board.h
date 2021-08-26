@@ -30,6 +30,19 @@ extern "C" {
  * @{
  */
 #define STDIO_UART_BAUDRATE (9600U)
+/** @} */
+
+/**
+ * @name    at86rf233 configuration
+ * @{
+ */
+#define AT86RF2XX_PARAMS {.spi = SPI_DEV(0), \
+                                .spi_clk = SPI_CLK_5MHZ, \
+                                .cs_pin = GPIO_PIN(PORT_B, 4),\
+                                .int_pin = GPIO_PIN(PORT_D, 6),\
+                                .sleep_pin = GPIO_PIN(PORT_B, 3),\
+                                .reset_pin = GPIO_PIN(PORT_B, 1)}
+/** @} */
 
 /** 
  * @name    User LED pin definitions and handlers
@@ -49,14 +62,34 @@ extern "C" {
 /** @} */
 
 /**
- * @brief Value that is written to the OSCCAL register on boot
- *
- * The ad5242 defaults to a MCU voltage of about 2.28V (max. 3.3V).
- * The OSCCAL has to be adapted to the current voltage.
- * 
- * TODO: figure out value for the REAPer
+ * Context swap defines
+ * Setup to use PA0 which is pin change interrupt 0 (PCINT0)
+ * This emulates a software triggered interrupt
  */
-//#define DEFAULT_OSCCAL 0xa6
+#define AVR_CONTEXT_SWAP_INIT do { \
+            DDRA |= (1 << DDA0); \
+            PCICR |= (1 << PCIE0); \
+            PCMSK0 |= (1 << PCINT0); \
+} while (0)
+#define AVR_CONTEXT_SWAP_INTERRUPT_VECT         PCINT0_vect
+#define AVR_CONTEXT_SWAP_INTERRUPT_VECT_NUM     PCINT0_vect_num
+#define AVR_CONTEXT_SWAP_TRIGGER                PORTA ^= (1 << PA0)
+
+/**
+ * @name    xtimer configuration values
+ * @{
+ */
+#define XTIMER_WIDTH                (16)
+#define XTIMER_BACKOFF                    (40)
+#define XTIMER_DEV                        (0)
+#define XTIMER_CHAN                       (0)
+#if CLOCK_CORECLOCK > 4000000UL
+#define XTIMER_HZ                   (CLOCK_CORECLOCK / 64)
+#else
+#define XTIMER_HZ                   (CLOCK_CORECLOCK / 8)
+#endif
+
+/** @} */
 
 /**
  * @name    ad5242 configuration
