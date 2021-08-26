@@ -1,4 +1,4 @@
-#include "periph.h"
+#include <stdint.h>
 #include "pattern_vars.h"
 
 #ifndef SRAM_UV_H

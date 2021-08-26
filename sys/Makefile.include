@@ -37,6 +37,10 @@ ifneq (,$(filter pthread,$(USEMODULE)))
   USEMODULE_INCLUDES += $(RIOTBASE)/sys/posix/pthread/include
 endif
 
+ifneq (,$(filter sram_undervolting,$(USEMODULE)))
+  USEMODULE_INCLUDES += $(RIOTBASE)/sys/sram_undervolting/include
+endif
+
 ifneq (,$(filter oneway_malloc,$(USEMODULE)))
   USEMODULE_INCLUDES += $(RIOTBASE)/sys/oneway-malloc/include
 endif
