@@ -20,7 +20,10 @@ extern const gpio_t uv_irq_pins[UV_IRQ_PIN_COUNT];
 
 extern gpio_isr_ctx_t uv_cb_config[UV_IRQ_PIN_COUNT];
 
+//store all reg info here for restore after UV
 extern uint8_t pin_config[4][3];
-extern uint8_t pcint_state[PCINT_NUM_BANKS];
+
+//state of all pcints
+extern uint8_t *pcint_state_pointer;
 
 #endif
