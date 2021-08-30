@@ -7,7 +7,7 @@
 #define F_CPU CLOCK_CORECLOCK
 #include <util/delay.h>
 
-uint8_t pin_states[4];
+uint8_t *pcint_state_pointer;
 uint8_t pin_config[4][3];
 
 
@@ -82,22 +82,22 @@ void gpio_restore(void) {
     if(pin_config[0][2] != 0x00) {
         PCICR |= 1 << PCIE0;
         PCMSK0 |= pin_config[0][2];
-        pin_states[0] = PINA;
+        pcint_state_pointer[0] = PINA;
     }
     else if(pin_config[1][2] != 0x00) {
         PCICR |= 1 << PCIE1;
         PCMSK1 |= pin_config[1][2];
-        pin_states[1] = PINB;
+        pcint_state_pointer[1] = PINB;
     }
     else if(pin_config[2][2] != 0x00) {
         PCICR |= 1 << PCIE2;
         PCMSK2 |= pin_config[2][2];
-        pin_states[2] = PINC;
+        pcint_state_pointer[2] = PINC;
     }
     else if(pin_config[3][2] != 0x00) {
         PCICR |= 1 << PCIE3;
         PCMSK3 |= pin_config[3][2];
-        pin_states[3] = PIND;
+        pcint_state_pointer[3] = PIND;
     }
     //sei() ist nicht notwendig, da das SREG vom undervolting_sleep auf den stack gepusht wurde!
 }
