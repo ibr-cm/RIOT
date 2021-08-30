@@ -40,6 +40,10 @@
 #define ENABLE_DEBUG            0
 #include "debug.h"
 
+#ifdef MODULE_SRAM_UNDERVOLTING
+#include "sram_undervolting.h"
+#endif
+
 #ifdef MODULE_PERIPH_GPIO_IRQ
 /*
  * @brief     Define GPIO interruptions for an specific atmega CPU, by default
@@ -116,6 +120,11 @@ enum {
  */
 static uint8_t pcint_state[PCINT_NUM_BANKS];
 
+#ifdef MODULE_SRAM_UNDERVOLTING
+//use pointer so that the SRAM_UNDERVOLTING module can use this variable!
+pcint_state_pointer = pcint_state;
+#endif
+
 /**
  * @brief stores all cb and args for all defined pcint.
  */
@@ -169,7 +178,13 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
         default:
             return -1;
     }
-
+    
+    #ifdef MODULE_SRAM_UNDERVOLTING
+    //store setup for gpio_restore
+    pin_config[atmega_port_num(pin)][0] = _SFR_MEM8(atmega_ddr_addr(pin));
+    pin_config[atmega_port_num(pin)][1] = _SFR_MEM8(atmega_port_addr(pin));
+	#endif
+	
     return 0;
 }
 
@@ -181,11 +196,21 @@ int gpio_read(gpio_t pin)
 void gpio_set(gpio_t pin)
 {
     _SFR_MEM8(atmega_port_addr(pin)) |= (1 << atmega_pin_num(pin));
+    
+    #ifdef MODULE_SRAM_UNDERVOLTING
+    //store setup for gpio_restore
+    pin_config[atmega_port_num(pin)][1] = _SFR_MEM8(atmega_port_addr(pin));
+    #endif
 }
 
 void gpio_clear(gpio_t pin)
 {
     _SFR_MEM8(atmega_port_addr(pin)) &= ~(1 << atmega_pin_num(pin));
+    
+    #ifdef MODULE_SRAM_UNDERVOLTING
+    //store setup for gpio_restore
+    pin_config[atmega_port_num(pin)][1] = _SFR_MEM8(atmega_port_addr(pin));
+    #endif
 }
 
 void gpio_toggle(gpio_t pin)
@@ -263,24 +288,48 @@ static inline int pcint_init_int(gpio_t pin, gpio_mode_t mode,
         case PCINT0_IDX:
             PCMSK0 |= (1 << bank_idx);
             PCICR |= (1 << PCIE0);
+            
+            #ifdef MODULE_SRAM_UNDERVOLTING
+    		//store setup for gpio_restore
+            pin_config[0][2] = PCMSK0;
+            #endif
+            
             break;
 #endif /* MODULE_ATMEGA_PCINT0 */
 #ifdef MODULE_ATMEGA_PCINT1
         case PCINT1_IDX:
             PCMSK1 |= (1 << bank_idx);
             PCICR |= (1 << PCIE1);
+            
+            #ifdef MODULE_SRAM_UNDERVOLTING
+    		//store setup for gpio_restore
+            pin_config[1][2] = PCMSK1;
+            #endif
+            
             break;
 #endif /* MODULE_ATMEGA_PCINT1 */
 #ifdef MODULE_ATMEGA_PCINT2
         case PCINT2_IDX:
             PCMSK2 |= (1 << bank_idx);
             PCICR |= (1 << PCIE2);
+            
+            #ifdef MODULE_SRAM_UNDERVOLTING
+    		//store setup for gpio_restore
+            pin_config[2][2] = PCMSK1;
+            #endif
+            
             break;
 #endif /* MODULE_ATMEGA_PCINT2 */
 #ifdef MODULE_ATMEGA_PCINT3
         case PCINT3_IDX:
             PCMSK3 |= (1 << bank_idx);
             PCICR |= (1 << PCIE3);
+            
+            #ifdef MODULE_SRAM_UNDERVOLTING
+    		//store setup for gpio_restore
+            pin_config[2][2] = PCMSK1;
+            #endif
+            
             break;
 #endif /* MODULE_ATMEGA_PCINT3 */
         default:
