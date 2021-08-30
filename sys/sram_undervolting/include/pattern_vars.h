@@ -20,7 +20,7 @@ extern uint8_t __sp_l, __sp_h, __sp_l_mirror, __sp_h_mirror;
 /** extern __temp_reg used by code that activates sleep mode **/
 extern uint8_t __temp_reg;
 
-/** vars used at end of stack**/
+/** vars used at end of stack. they are important for the dynamic checksum and need to stay the same after UV ends!**/
 extern uint16_t __safe_data_start, __mirror_data_start,  __safe_noinit_end, __mirror_noinit_end, __safe_cs_border, __mirror_cs_border;
 extern uint8_t __safe_stack_pointer_l, __mirror_stack_pointer_l, __safe_stack_pointer_h, __mirror_stack_pointer_h; 
 
