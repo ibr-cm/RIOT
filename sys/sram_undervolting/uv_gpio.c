@@ -10,6 +10,8 @@
 uint8_t *pcint_state_pointer;
 uint8_t pin_config[4][3];
 
+gpio_isr_ctx_t uv_cb_config[UV_IRQ_PIN_COUNT];
+
 
 int get_Port(gpio_t pin) {
     return (pin >> 4);
@@ -17,6 +19,25 @@ int get_Port(gpio_t pin) {
 
 int get_Pin(gpio_t pin) {
     return (pin & 0x0F);
+}
+
+void gpio_update_restore_table(void) {
+    pin_config[0][0] = DDRA;
+    pin_config[0][1] = PORTA;
+    pin_config[0][2] = PCMSK0;
+
+    pin_config[1][0] = DDRB;
+    pin_config[1][1] = PORTB;
+    pin_config[1][2] = PCMSK1;
+
+    pin_config[2][0] = DDRC;
+    pin_config[2][1] = PORTC;
+    pin_config[2][2] = PCMSK2;
+
+    pin_config[3][0] = DDRD;
+    pin_config[3][1] = PORTD;
+    pin_config[3][2] = PCMSK3;
+    return;
 }
 
 void check_uv_irqs(void) {

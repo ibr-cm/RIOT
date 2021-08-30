@@ -2,6 +2,7 @@
 #include "pattern_vars.h"
 #include "periph/gpio.h"
 #include "board.h"
+#include <avr/sleep.h>
 
 #ifndef SRAM_UV_H
 #define SRAM_UV_H
@@ -12,6 +13,7 @@ void undervolting_restore(void);
 
 void check_uv_irqs(void);
 void gpio_restore(void);
+void gpio_update_restore_table(void);
 
 #define UV_IRQ_PIN_COUNT    (1)
 
