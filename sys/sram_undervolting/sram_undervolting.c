@@ -18,7 +18,6 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
     //set start value of the chain
     __prev_block_value = SPH;
 
-    SIG_BLOCK_ONE_HIGH;
 
     /** first block**/
     while(__data_tracker < (const uint8_t*)(&__noinit_end)) {
@@ -34,7 +33,6 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
         __sum_of_bytes = 0x00;
     }
 
-    SIG_BLOCK_ONE_LOW;
 
     /** save border between the two blocks. First address of pattern of second block. **/
     __safe_cs_border = (uint16_t)__pattern_tracker;
@@ -51,7 +49,6 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
     //set start value of the chain
     __prev_block_value = SPL;
 
-    SIG_BLOCK_TWO_HIGH;
 
     /**second block**/
     while(__data_tracker < (const uint8_t*)(&__pattern_start)) {
@@ -67,7 +64,6 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
         __sum_of_bytes = 0x00;
     }
 
-    SIG_BLOCK_TWO_LOW;
 
     //sleep_bod_disable();
     do { \
@@ -106,7 +102,6 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
     /**use this for the second version of the checksum**/
     __prev_block_value = __safe_stack_pointer_h;
 
-    SIG_BLOCK_ONE_HIGH;
 
     /**first block**/
     while(__data_tracker < (const uint8_t *)(&__noinit_end)) { 
@@ -126,7 +121,6 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
         }
     }
 
-    SIG_BLOCK_ONE_LOW;
 
     /**find start of stack, align with 16 B blocks for checksum**/
     __temp_reg       = __safe_stack_pointer_l % 16;
@@ -136,7 +130,6 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
     //set start value of the second chain
     __prev_block_value = __safe_stack_pointer_l;
 
-    SIG_BLOCK_TWO_HIGH;
 
     /**second block**/
     while(__data_tracker < (const uint8_t *)(&__pattern_start)) { 
@@ -156,7 +149,6 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
         }
     }
 
-    SIG_BLOCK_TWO_LOW;
 
 }
 
