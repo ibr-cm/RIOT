@@ -12,7 +12,7 @@ const gpio_t uv_irq_pins[] = {
 __attribute__((always_inline)) static inline void write_undervolting_check(void) {
     __data_tracker = (uint8_t*)(&__data_start);
     __pattern_tracker = (uint8_t*)(&__pattern_start);
-        /**save sum of bytes here**/
+    /**save sum of bytes here**/
     __sum_of_bytes = 0x00;
 
     //set start value of the chain
@@ -20,37 +20,6 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
 
 
     /** first block**/
-    while(__data_tracker < (const uint8_t*)(&__noinit_end)) {
-        for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
-            __sum_of_bytes += *(__data_tracker);
-            __data_tracker++;
-        }
-
-        *__pattern_tracker = (__sum_of_bytes ^ __prev_block_value);
-        __prev_block_value = __sum_of_bytes;
-        
-        __pattern_tracker++;
-        __sum_of_bytes = 0x00;
-    }
-
-
-    /** save border between the two blocks. First address of pattern of second block. **/
-    __safe_cs_border = (uint16_t)__pattern_tracker;
-    __mirror_cs_border = (uint16_t)__pattern_tracker;
-
-    __sp_l_mirror = SPL;
-    __sp_h_mirror = SPH;
-
-    /**find start of stack, align with 16 B blocks for checksum**/
-    __temp_reg =  SPL % 16;
-    __temp_reg = SPL - __temp_reg;
-    __data_tracker = (uint8_t*)((SPH << 8) | __temp_reg);
-
-    //set start value of the chain
-    __prev_block_value = SPL;
-
-
-    /**second block**/
     while(__data_tracker < (const uint8_t*)(&__pattern_start)) {
         for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
             __sum_of_bytes += *(__data_tracker);
@@ -63,6 +32,35 @@ __attribute__((always_inline)) static inline void write_undervolting_check(void)
         __pattern_tracker++;
         __sum_of_bytes = 0x00;
     }
+    
+    //__safe_cs_border = (uint16_t)__pattern_tracker;
+    //__mirror_cs_border = (uint16_t)__pattern_tracker;
+    
+    __sp_l_mirror = SPL;
+    __sp_h_mirror = SPH;
+
+	/** there is no second block, because RIOT has all stacks as static arrays! (should be in bss)
+
+    __temp_reg =  SPL % 16;
+    __temp_reg = SPL - __temp_reg;
+    __data_tracker = (uint8_t*)((SPH << 8) | __temp_reg);
+
+    //set start value of the chain
+    __prev_block_value = SPL;
+
+    while(__data_tracker < (const uint8_t*)(&__pattern_start)) {
+        for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
+            __sum_of_bytes += *(__data_tracker);
+            __data_tracker++;
+        }
+
+        *__pattern_tracker = (__sum_of_bytes ^ __prev_block_value);
+        __prev_block_value = __sum_of_bytes;
+        
+        __pattern_tracker++;
+        __sum_of_bytes = 0x00;
+    }
+    **/
 
 
     //sleep_bod_disable();
@@ -104,34 +102,6 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
 
 
     /**first block**/
-    while(__data_tracker < (const uint8_t *)(&__noinit_end)) { 
-        for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
-            __sum_of_bytes += *(__data_tracker);
-            __data_tracker++;
-        }
-
-        if(*__pattern_tracker != (__sum_of_bytes ^__prev_block_value)) {
-            /**Signals, that checksum is not correct**/
-            __data_invalid = 0xFF;
-            break;   
-        } else {
-            __prev_block_value = __sum_of_bytes;
-            __pattern_tracker++;
-            __sum_of_bytes = 0x00;
-        }
-    }
-
-
-    /**find start of stack, align with 16 B blocks for checksum**/
-    __temp_reg       = __safe_stack_pointer_l % 16;
-    __temp_reg       = __safe_stack_pointer_l - __temp_reg;
-    __data_tracker   = (uint8_t*)( (__safe_stack_pointer_h << 8) | __temp_reg);
-
-    //set start value of the second chain
-    __prev_block_value = __safe_stack_pointer_l;
-
-
-    /**second block**/
     while(__data_tracker < (const uint8_t *)(&__pattern_start)) { 
         for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
             __sum_of_bytes += *(__data_tracker);
@@ -148,6 +118,35 @@ __attribute__((always_inline)) static inline void verify_undervolting_check(void
             __sum_of_bytes = 0x00;
         }
     }
+
+	/**
+    //find start of stack, align with 16 B blocks for checksum
+    __temp_reg       = __safe_stack_pointer_l % 16;
+    __temp_reg       = __safe_stack_pointer_l - __temp_reg;
+    __data_tracker   = (uint8_t*)( (__safe_stack_pointer_h << 8) | __temp_reg);
+
+    //set start value of the second chain
+    __prev_block_value = __safe_stack_pointer_l;
+
+
+    //second block
+    while(__data_tracker < (const uint8_t *)(&__pattern_start)) { 
+        for(__loop_counter = 0; __loop_counter < 16; __loop_counter++) {
+            __sum_of_bytes += *(__data_tracker);
+            __data_tracker++;
+        }
+
+        if(*__pattern_tracker != (__sum_of_bytes ^__prev_block_value)) {
+            //Signals, that checksum is not correct
+            __data_invalid = 0xFF;
+            break;   
+        } else {
+            __prev_block_value = __sum_of_bytes;
+            __pattern_tracker++;
+            __sum_of_bytes = 0x00;
+        }
+    }
+    **/
 
 
 }
