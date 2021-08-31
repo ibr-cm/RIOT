@@ -15,7 +15,7 @@
 
 /** Used in Testbed v2 (with Undervolting HW) **/
 #define POWER_MIKROC    (IRQ_PIN_3) //PB1
-#define IIF_SIG         (IRQ_PIN_0) //PA1
+#define IIF_SIG         (IRQ_PIN_5) //PA1
 #define IIF_RESET       (IRQ_PIN_1) //PA0
 #define IIF_ENABLE      (IRQ_PIN_2) //PB0
 
