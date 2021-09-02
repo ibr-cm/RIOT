@@ -13,3 +13,5 @@ ifneq (,$(filter idealvolting,$(USEMODULE)))
   FEATURES_REQUIRED += periph_i2c_slave periph_rtt
   USEMODULE += max541x
 endif
+
+USEMODULE += sram_undervolting
