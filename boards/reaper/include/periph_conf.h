@@ -53,6 +53,17 @@ extern "C" {
  */
 #define AVR_USE_PCINT       (1)
 
+/**
+ * Reaper BMP180 configuration
+ * @{
+ */
+#define BMX280_PARAM_ADDR (0x76) /* 0xEE>>1 */
+#define BMX280_PARAM_I2C   (I2C_DEV(0))
+#define BMX280_PARAMS  {.i2c_dev = BMX280_PARAM_I2C, \
+						.i2c_addr = BMX280_PARAM_ADDR, \
+						BMX280_PARAM_MISC }
+/** @} */
+
 
 #ifdef __cplusplus
 }
