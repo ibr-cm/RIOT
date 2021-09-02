@@ -46,7 +46,7 @@ extern void __libc_init_array(void);
 //The Undervolting check needs to happen before any other part of the program can access the memory!
 #include "sram_undervolting.h"
 #include "uv_periph.h"
-void init3_ovr(void) __attribute__((section(".init3")));
+void init0_ovr(void) __attribute__((section(".init0")));
 #endif
 
 /**
@@ -105,7 +105,7 @@ __attribute__((used)) void reset_handler(void)
 /** Init3 happens before data is written to bss!
 *
 **/
-__attribute__((used, naked)) void init3_ovr(void) {
+__attribute__((used, naked)) void init0_ovr(void) {
 
     /** Init Stack to Bottom of own Data Section. 
     *   The lower XX Bytes are not used!
