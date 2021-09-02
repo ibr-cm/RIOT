@@ -15,7 +15,7 @@
 
 /** Used in Testbed v2 (with Undervolting HW) **/
 #define POWER_MIKROC    (IRQ_PIN_3) //PB1
-#define IIF_SIG         (IRQ_PIN_5) //PA1
+#define IIF_SIG         (IRQ_PIN_5) //PB5
 #define IIF_RESET       (IRQ_PIN_1) //PA0
 #define IIF_ENABLE      (IRQ_PIN_2) //PB0
 
@@ -38,8 +38,8 @@
 *   the pin reads Low.
 *   If the Signal is Low, the Switch is open and the Pin reads High, due to its Pullup.
 **/
-#define IIF_SIG_SETUP       DDRA  &= ~(1 << 1); PORTA |= (1 << 1)
-#define IIF_SIG_LOW         ((PINA & 0x02) == 0x02)
+#define IIF_SIG_SETUP       DDRB  &= ~(1 << 3); PORTB |= (1 << 3)
+#define IIF_SIG_LOW         ((PINB & 0x08) == 0x08)
 #define IIF_SIG_HIGH        (!IIF_SIG_LOW)
 
 #define IIF_ENABLE_SETUP    DDRB  &= ~(1 << 0); PORTB |= (1 << 0)
