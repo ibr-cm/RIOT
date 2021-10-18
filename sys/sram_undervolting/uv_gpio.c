@@ -3,6 +3,7 @@
 #include "periph/gpio.h"
 #include "periph_cpu.h"
 #include "uv_periph.h"
+#include "atmega_gpio.h"
 
 #define F_CPU CLOCK_CORECLOCK
 #include <util/delay.h>
@@ -11,6 +12,10 @@ uint8_t *pcint_state_pointer;
 uint8_t pin_config[4][3];
 
 gpio_isr_ctx_t uv_cb_config[UV_IRQ_PIN_COUNT];
+
+const gpio_t uv_irq_pins[] = {
+    IIF_SIG,
+};
 
 
 int get_Port(gpio_t pin) {
@@ -112,7 +117,8 @@ void check_uv_irqs(void) {
 
             //check if handler is registered.
             if( (*irq_reg) & (1 << pin_num)) {
-                uv_cb_config[pin_num].cb(uv_cb_config[pin_num].arg);
+                //call the CB!
+                uv_cb_config[i].cb(uv_cb_config[i].arg);
             }
         }
     }
@@ -121,4 +127,21 @@ void check_uv_irqs(void) {
     IIF_RESET_OFF;
     
     return;
+}
+
+void register_uv_isr(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank, gpio_cb_t cb, void *arg) {
+    //check if gpio is UV IRQ Pin
+    for(int i = 0; i < UV_IRQ_PIN_COUNT; i++) {
+        if(pin == uv_irq_pins[i]) {
+            //found a match, register IRQ!
+            uv_cb_config[i].cb = cb;
+            uv_cb_config[i].arg = arg;
+
+            //register normally, just in case Interrupts happen during active phase!
+            gpio_init_int(pin, mode, flank, cb, arg);
+
+            //Done, break the loop
+            break;
+        }
+    }
 }

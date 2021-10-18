@@ -4,10 +4,6 @@
 
 //#define ACTIVATE_VERSION_2 (0)
 
-const gpio_t uv_irq_pins[] = {
-    IIF_SIG,
-};
-
 
 __attribute__((weak)) void undervolting_reload_routine(void) {
     //do nothing here
