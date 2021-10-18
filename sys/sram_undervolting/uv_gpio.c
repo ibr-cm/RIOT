@@ -40,6 +40,44 @@ void gpio_update_restore_table(void) {
     return;
 }
 
+void gpio_restore(void) {
+    //use |= or the restore will take longer. Reason unknown...
+    DDRA  |= pin_config[0][0];
+    PORTA |= pin_config[0][1];
+    
+    DDRB  |= pin_config[1][0];
+    PORTB |= pin_config[1][1]; 
+    
+    DDRC  |= pin_config[2][0];
+    PORTC |= pin_config[2][1]; 
+
+    DDRD  |= pin_config[3][0];
+    PORTD |= pin_config[3][1]; 
+    
+    //restore IRQS
+    if(pin_config[0][2] != 0x00) {
+        PCICR |= 1 << PCIE0;
+        PCMSK0 |= pin_config[0][2];
+        pcint_state_pointer[0] = PINA;
+    }
+    else if(pin_config[1][2] != 0x00) {
+        PCICR |= 1 << PCIE1;
+        PCMSK1 |= pin_config[1][2];
+        pcint_state_pointer[1] = PINB;
+    }
+    else if(pin_config[2][2] != 0x00) {
+        PCICR |= 1 << PCIE2;
+        PCMSK2 |= pin_config[2][2];
+        pcint_state_pointer[2] = PINC;
+    }
+    else if(pin_config[3][2] != 0x00) {
+        PCICR |= 1 << PCIE3;
+        PCMSK3 |= pin_config[3][2];
+        pcint_state_pointer[3] = PIND;
+    }
+    //sei() ist nicht notwendig, da das SREG vom undervolting_sleep auf den stack gepusht wurde!
+}
+
 void check_uv_irqs(void) {
     //check which IRQ woke uC up
     //call ISR, if ISR is registered
@@ -83,42 +121,4 @@ void check_uv_irqs(void) {
     IIF_RESET_OFF;
     
     return;
-}
-
-void gpio_restore(void) {
-    //use |= or the restore will take longer. Reason unknown...
-    DDRA  |= pin_config[0][0];
-    PORTA |= pin_config[0][1];
-    
-    DDRB  |= pin_config[1][0];
-    PORTB |= pin_config[1][1]; 
-    
-    DDRC  |= pin_config[2][0];
-    PORTC |= pin_config[2][1]; 
-
-    DDRD  |= pin_config[3][0];
-    PORTD |= pin_config[3][1]; 
-    
-    //restore IRQS
-    if(pin_config[0][2] != 0x00) {
-        PCICR |= 1 << PCIE0;
-        PCMSK0 |= pin_config[0][2];
-        pcint_state_pointer[0] = PINA;
-    }
-    else if(pin_config[1][2] != 0x00) {
-        PCICR |= 1 << PCIE1;
-        PCMSK1 |= pin_config[1][2];
-        pcint_state_pointer[1] = PINB;
-    }
-    else if(pin_config[2][2] != 0x00) {
-        PCICR |= 1 << PCIE2;
-        PCMSK2 |= pin_config[2][2];
-        pcint_state_pointer[2] = PINC;
-    }
-    else if(pin_config[3][2] != 0x00) {
-        PCICR |= 1 << PCIE3;
-        PCMSK3 |= pin_config[3][2];
-        pcint_state_pointer[3] = PIND;
-    }
-    //sei() ist nicht notwendig, da das SREG vom undervolting_sleep auf den stack gepusht wurde!
 }
