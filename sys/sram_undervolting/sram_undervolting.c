@@ -9,6 +9,13 @@ const gpio_t uv_irq_pins[] = {
 };
 
 
+__attribute__((weak)) void undervolting_reload_routine(void) {
+    //do nothing here
+    //overwrite this in your main to do things here, to reinit stuff you need!
+    return;
+}
+
+
 __attribute__((always_inline)) static inline void write_undervolting_check(void) {
     __data_tracker = (uint8_t*)(&__data_start);
     __pattern_tracker = (uint8_t*)(&__pattern_start);
@@ -266,8 +273,13 @@ void undervolting_restore(void) {
             "out  __SREG__, __tmp_reg__          \n\t"
             "pop  __tmp_reg__                    \n\t");
 
+        //Reload all Pins as they were before UV
         gpio_restore();
 
+        //Run Code that can be overwritten by the user
+        undervolting_reload_routine();
+        
+        //do UV IRQS!
         check_uv_irqs();
         
         /** Now we are back in the old context!**/

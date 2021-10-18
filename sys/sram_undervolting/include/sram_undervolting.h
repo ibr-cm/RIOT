@@ -9,6 +9,7 @@
 
 void undervolting_sleep(void);
 void undervolting_restore(void);
+void undervolting_reload_routine(void);
 
 
 void check_uv_irqs(void);
