@@ -15,6 +15,7 @@ void undervolting_reload_routine(void);
 void check_uv_irqs(void);
 void gpio_restore(void);
 void gpio_update_restore_table(void);
+void register_uv_isr(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank, gpio_cb_t cb, void *arg);
 
 #define UV_IRQ_PIN_COUNT    (1)
 

@@ -8,7 +8,6 @@
 #define F_CPU CLOCK_CORECLOCK
 #include <util/delay.h>
 
-uint8_t *pcint_state_pointer;
 uint8_t pin_config[4][3];
 
 gpio_isr_ctx_t uv_cb_config[UV_IRQ_PIN_COUNT];
@@ -16,6 +15,22 @@ gpio_isr_ctx_t uv_cb_config[UV_IRQ_PIN_COUNT];
 const gpio_t uv_irq_pins[] = {
     IIF_SIG,
 };
+
+//this is the wrapper for UV INT Pins
+//just call the handler and reset the IIF
+
+void uv_isr_wrapper(void *arg) {
+
+    //pointer to the stored cb info is the arg!
+    gpio_isr_ctx_t *cb_info = (gpio_isr_ctx_t*)(arg);
+
+    //call the cb
+    cb_info->cb(cb_info->arg);
+    
+    IIF_RESET_ON; //IRQ detected, reset IIF.
+    IIF_RESET_OFF;
+
+}
 
 
 int get_Port(gpio_t pin) {
@@ -138,7 +153,7 @@ void register_uv_isr(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank, gpio_cb_t
             uv_cb_config[i].arg = arg;
 
             //register normally, just in case Interrupts happen during active phase!
-            gpio_init_int(pin, mode, flank, cb, arg);
+            gpio_init_int(pin, mode, flank, &uv_isr_wrapper, &(uv_cb_config[i]));
 
             //Done, break the loop
             break;

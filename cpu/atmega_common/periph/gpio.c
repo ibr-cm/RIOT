@@ -122,7 +122,7 @@ static uint8_t pcint_state[PCINT_NUM_BANKS];
 
 #ifdef MODULE_SRAM_UNDERVOLTING
 //use pointer so that the SRAM_UNDERVOLTING module can use this variable!
-pcint_state_pointer = pcint_state;
+uint8_t *pcint_state_pointer = (uint8_t*)(pcint_state);
 #endif
 
 /**
