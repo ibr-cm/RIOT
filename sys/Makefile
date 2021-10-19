@@ -122,9 +122,6 @@ endif
 ifneq (,$(filter sntp,$(USEMODULE)))
   DIRS += net/application_layer/sntp
 endif
-ifneq (,$(filter sram_undervolting,$(USEMODULE)))
-  DIRS += sram_undervolting/
-endif
 ifneq (,$(filter sock_async_event,$(USEMODULE)))
   DIRS += net/sock/async/event
 endif
