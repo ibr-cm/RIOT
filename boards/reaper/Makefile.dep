@@ -15,3 +15,6 @@ ifneq (,$(filter idealvolting,$(USEMODULE)))
 endif
 
 USEMODULE += sram_undervolting
+
+USEMODULE += atmega_pcint1
+USEMODULE += atmega_pcint2
