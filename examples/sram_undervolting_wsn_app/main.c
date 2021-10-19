@@ -3,6 +3,7 @@
 #include <inttypes.h>
 
 #include "sram_undervolting.h"
+#include "uv_periph.h"
 #include "board.h"
 #include "periph/gpio.h"
 
@@ -16,6 +17,11 @@
 #include "msg.h"
 
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
+
+void test_irq(void *irq_arg) {
+    (void) irq_arg;
+    printf("ISR was called!\n");
+}
 
 void undervolting_reload_routine(void) {
 	cpu_init();
@@ -37,6 +43,8 @@ void *temp_thread(void *arg)
 
 	char str_temp[8];
 	size_t len;
+
+    register_uv_isr(IIF_SIG, GPIO_IN_PU, GPIO_FALLING, &test_irq, NULL);
 
 	puts("+------------Initializing------------+");
     switch (bmx280_init(&dev, &bmx280_params[0])) {
