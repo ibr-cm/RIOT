@@ -315,7 +315,7 @@ static inline int pcint_init_int(gpio_t pin, gpio_mode_t mode,
             
             #ifdef MODULE_SRAM_UNDERVOLTING
     		//store setup for gpio_restore
-            pin_config[2][2] = PCMSK1;
+            pin_config[2][2] = PCMSK2;
             #endif
             
             break;
@@ -327,7 +327,7 @@ static inline int pcint_init_int(gpio_t pin, gpio_mode_t mode,
             
             #ifdef MODULE_SRAM_UNDERVOLTING
     		//store setup for gpio_restore
-            pin_config[2][2] = PCMSK1;
+            pin_config[3][2] = PCMSK3;
             #endif
             
             break;

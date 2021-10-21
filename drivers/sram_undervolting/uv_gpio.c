@@ -80,17 +80,17 @@ void gpio_restore(void) {
         PCMSK0 |= pin_config[0][2];
         pcint_state_pointer[0] = PINA;
     }
-    else if(pin_config[1][2] != 0x00) {
+    if(pin_config[1][2] != 0x00) {
         PCICR |= 1 << PCIE1;
         PCMSK1 |= pin_config[1][2];
         pcint_state_pointer[1] = PINB;
     }
-    else if(pin_config[2][2] != 0x00) {
+    if(pin_config[2][2] != 0x00) {
         PCICR |= 1 << PCIE2;
         PCMSK2 |= pin_config[2][2];
         pcint_state_pointer[2] = PINC;
     }
-    else if(pin_config[3][2] != 0x00) {
+    if(pin_config[3][2] != 0x00) {
         PCICR |= 1 << PCIE3;
         PCMSK3 |= pin_config[3][2];
         pcint_state_pointer[3] = PIND;
