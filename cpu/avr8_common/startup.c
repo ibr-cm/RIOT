@@ -64,13 +64,11 @@ void init8_ovr(void) __attribute__((section(".init8")));
 
 __attribute__((used, naked)) void init7_ovr(void)
 {
-	__var_7 = 0x02;
     __asm__ ("call reset_handler");
 }
 
 __attribute__((used, naked)) void init8_ovr(void)
 {
-	__var_7 = 0x02;
     __asm__ ("jmp exit");
 }
 
@@ -83,7 +81,6 @@ __attribute__((used, naked)) void init8_ovr(void)
  */
 __attribute__((used)) void reset_handler(void)
 {
-	__var_7 = 0x02;
 #ifdef MODULE_PUF_SRAM
     puf_sram_init((uint8_t *)RAMEND-SEED_RAM_LEN, SEED_RAM_LEN);
 #endif
@@ -106,6 +103,12 @@ __attribute__((used)) void reset_handler(void)
 *
 **/
 __attribute__((used, naked)) void init0_ovr(void) {
+
+	/**
+	 * Disable JTAG to use the PINs for the UV HW
+	**/
+	MCUCR |= (1 << JTD);
+	MCUCR |= (1 << JTD);
 
     /** Init Stack to Bottom of own Data Section. 
     *   The lower XX Bytes are not used!
