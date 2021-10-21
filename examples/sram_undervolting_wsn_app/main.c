@@ -16,6 +16,14 @@
 #include "thread.h"
 #include "msg.h"
 
+
+#include "net/gnrc.h"
+#include "net/gnrc/netreg.h"
+#include "net/gnrc/ipv6.h"
+#include "net/gnrc/netif.h"
+#include "net/gnrc/netif/hdr.h"
+#include "net/gnrc/udp.h"
+
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
 
 void test_irq(void *irq_arg) {
@@ -79,6 +87,49 @@ void *temp_thread(void *arg)
     return NULL;
 }
 
+static void send( int16_t data) {
+    netif_t *iface;
+    uint8_t addr[GNRC_NETIF_L2ADDR_MAXLEN];
+    size_t addr_len;
+    gnrc_pktsnip_t *pkt, *hdr;
+    gnrc_netif_hdr_t *nethdr;
+    uint8_t flags = GNRC_NETIF_HDR_FLAGS_BROADCAST;
+
+    iface = &(gnrc_netif_iter(NULL)->netif);
+    if (!iface) {
+        puts("error: invalid interface given");
+        return;
+    }
+
+    /* parse address */
+    addr_len = gnrc_netif_addr_from_str("bcast", addr);
+
+    /* put packet together */
+    pkt = gnrc_pktbuf_add(NULL, &data, sizeof(data), GNRC_NETTYPE_UNDEF);
+    if (pkt == NULL) {
+        puts("error: packet buffer full");
+        return;
+    }
+    hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
+    if (hdr == NULL) {
+        puts("error: packet buffer full");
+        gnrc_pktbuf_release(pkt);
+        return;
+    }
+    pkt = gnrc_pkt_prepend(pkt, hdr);
+    nethdr = (gnrc_netif_hdr_t *)hdr->data;
+    nethdr->flags = flags;
+    /* and send it */
+    if (gnrc_netif_send((gnrc_netif_t *)iface, pkt) < 1) {
+        puts("error: unable to send");
+        gnrc_pktbuf_release(pkt);
+        return;
+    }
+
+    return;
+}
+
+
 int main(void)
 {
 
@@ -98,6 +149,8 @@ int main(void)
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
+
+        send((int16_t)m.content.value);
 		
 		undervolting_sleep();
 
@@ -106,6 +159,8 @@ int main(void)
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
+
+        send((int16_t)m.content.value);
 
 		undervolting_sleep();
 	

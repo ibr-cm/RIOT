@@ -8,6 +8,15 @@ USEMODULE += shell_commands
 USEMODULE += bme280_i2c
 USEMODULE += fmt
 
+#Initialisiere Link-Layer und Netzwerkinterface
+USEMODULE += gnrc_netdev_default
+USEMODULE += auto_init_gnrc_netif
+#Module fuer IPv6 + 6LowPan
+USEMODULE += gnrc_ipv6
+USEMODULE += gnrc_sixlowpan_default
+#Module fuer UDP
+USEMODULE += gnrc_udp
+
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
 
