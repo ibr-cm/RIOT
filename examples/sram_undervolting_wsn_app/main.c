@@ -24,6 +24,8 @@
 #include "net/gnrc/netif/hdr.h"
 #include "net/gnrc/udp.h"
 
+#include "at86rf2xx.h"
+
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
 
 void test_irq(void *irq_arg) {
@@ -34,6 +36,10 @@ void test_irq(void *irq_arg) {
 void undervolting_reload_routine(void) {
 	cpu_init();
 	stdio_init();
+
+    //Reload radio driver by resetting state machine
+    at86rf2xx_t *at86Dev = (at86rf2xx_t*)gnrc_netif_iter(NULL)->dev;
+    at86rf2xx_reset(at86Dev);
 
 	printf("Reload done!\n");
     return;
