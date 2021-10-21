@@ -14,19 +14,19 @@
 #define IRQ_PIN_6 (GPIO_PIN(PORT_B, 4)) //PB4
 
 /** Used in Testbed v2 (with Undervolting HW) **/
-#define POWER_MIKROC    (IRQ_PIN_3) //PB1
-#define IIF_SIG         (IRQ_PIN_5) //PB3
-#define IIF_RESET       (IRQ_PIN_1) //PA0
-#define IIF_ENABLE      (IRQ_PIN_2) //PB0
+#define POWER_MIKROC    (GPIO_PIN(PORT_C, 2)) //PC2
+#define IIF_SIG         (GPIO_PIN(PORT_C, 5)) //PC5
+#define IIF_RESET       (GPIO_PIN(PORT_C, 4)) //PC4
+#define IIF_ENABLE      (GPIO_PIN(PORT_C, 3)) //PC3
 
 /** Defines for better Code readability in startup and UV section.**/
-#define POWER_MIKROC_SETUP  (DDRB  |=  (1 << 1))
-#define POWER_MIKROC_ON     (PORTB |=  (1 << 1))
-#define POWER_MIKROC_OFF    (PORTB &= ~(1 << 1))
+#define POWER_MIKROC_SETUP  (DDRC  |=  (1 << 2))
+#define POWER_MIKROC_ON     (PORTC |=  (1 << 2))
+#define POWER_MIKROC_OFF    (PORTC &= ~(1 << 2))
 
-#define IIF_RESET_SETUP     (DDRA  |=  (1 << 0))
-#define IIF_RESET_ON        (PORTA |=  (1 << 0))
-#define IIF_RESET_OFF       (PORTA &= ~(1 << 0))
+#define IIF_RESET_SETUP     (DDRC  |=  (1 << 4))
+#define IIF_RESET_ON        (PORTC |=  (1 << 4))
+#define IIF_RESET_OFF       (PORTC &= ~(1 << 4))
 
 /** Important: High and Low does not refer to the signal on the Pin, 
 *   but the Signal that we are trying to read!
@@ -38,12 +38,12 @@
 *   the pin reads Low.
 *   If the Signal is Low, the Switch is open and the Pin reads High, due to its Pullup.
 **/
-#define IIF_SIG_SETUP       DDRB  &= ~(1 << 3); PORTB |= (1 << 3)
-#define IIF_SIG_LOW         ((PINB & 0x08) == 0x08)
+#define IIF_SIG_SETUP       DDRC  &= ~(1 << 5); PORTC |= (1 << 5)
+#define IIF_SIG_LOW         ((PINC & 0x20) == 0x20)
 #define IIF_SIG_HIGH        (!IIF_SIG_LOW)
 
-#define IIF_ENABLE_SETUP    DDRB  &= ~(1 << 0); PORTB |= (1 << 0)
-#define IIF_ENABLE_LOW      ((PINB & 0x01) == 0x01)
+#define IIF_ENABLE_SETUP    DDRC  &= ~(1 << 3); PORTC |= (1 << 3)
+#define IIF_ENABLE_LOW      ((PINC & 0x08) == 0x08)
 #define IIF_ENABLE_HIGH     (!IIF_ENABLE_LOW)
 
 /** Define for debugpins, which are used to signal certain states of the code **/
