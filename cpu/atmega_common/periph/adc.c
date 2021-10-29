@@ -91,7 +91,7 @@ int adc_init(adc_t line)
     }
 
     /* Ref Voltage is Vcc(5V) */
-    ADMUX |= (1 << REFS0);
+    ADMUX |= ( (1 << REFS1) | (1 << REFS0) );
 
     _done();
 
