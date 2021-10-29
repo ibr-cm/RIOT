@@ -25,6 +25,7 @@
 #include "net/gnrc/udp.h"
 
 #include "at86rf2xx.h"
+#include "periph/adc.h"
 
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
 
@@ -40,6 +41,8 @@ void undervolting_reload_routine(void) {
     //Reload radio driver by resetting state machine
     at86rf2xx_t *at86Dev = (at86rf2xx_t*)gnrc_netif_iter(NULL)->dev;
     at86rf2xx_reset(at86Dev);
+
+    adc_init(ADC_LINE(3));
 
 	printf("Reload done!\n");
     return;
@@ -147,6 +150,8 @@ int main(void)
 
     m.content.value = 1;
 
+    int sample = 0;
+    adc_init(ADC_LINE(3));
 
 	while(1) {
 
@@ -155,6 +160,10 @@ int main(void)
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
+
+        sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
+        sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
+        printf("ADC Value: %i\n", sample);
 
         send((int16_t)m.content.value);
 		
@@ -165,6 +174,10 @@ int main(void)
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
+
+        sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
+        sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
+        printf("ADC Value: %i\n", sample);
 
         send((int16_t)m.content.value);
 

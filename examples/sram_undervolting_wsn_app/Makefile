@@ -12,6 +12,8 @@ USEMODULE += fmt
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
 
+FEATURES_REQUIRED = periph_adc
+
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
 
