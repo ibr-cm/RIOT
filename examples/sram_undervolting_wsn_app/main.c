@@ -27,6 +27,8 @@
 #include "at86rf2xx.h"
 #include "periph/adc.h"
 
+#include "xtimer.h"
+
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
 
 void test_irq(void *irq_arg) {
@@ -35,12 +37,24 @@ void test_irq(void *irq_arg) {
 }
 
 void undervolting_reload_routine(void) {
+
 	cpu_init();
 	stdio_init();
+    xtimer_init();
+
+    printf("UART and CPU done!\n");
 
     //Reload radio driver by resetting state machine
-    at86rf2xx_t *at86Dev = (at86rf2xx_t*)gnrc_netif_iter(NULL)->dev;
-    at86rf2xx_reset(at86Dev);
+    at86rf2xx_t *at86Dev = (at86rf2xx_t*)(gnrc_netif_iter(NULL)->dev);
+    if (!at86Dev) {
+        puts("error: invalid device given");
+        return;
+    }
+    printf("Got device, trying reset!\n");
+    at86Dev->netdev.netdev.driver->init((netdev_t*)at86Dev);
+    //at86rf2xx_reset(at86Dev);
+
+    printf("Radio done!\n");
 
     adc_init(ADC_LINE(3));
 
