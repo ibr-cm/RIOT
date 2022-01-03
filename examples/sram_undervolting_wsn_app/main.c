@@ -31,6 +31,14 @@
 
 char temp_thread_stack[THREAD_STACKSIZE_MAIN];
 
+typedef struct main
+{
+    int16_t temperature;
+    uint16_t adc;
+    uint32_t seq_number;
+} wsn_data_t;
+
+
 void test_irq(void *irq_arg) {
     (void) irq_arg;
     printf("ISR was called!\n");
@@ -110,7 +118,7 @@ void *temp_thread(void *arg)
     return NULL;
 }
 
-static void send( int16_t data) {
+static void send( int16_t temp_data, uint16_t adc_data, uint32_t seq ) {
     netif_t *iface;
     uint8_t addr[GNRC_NETIF_L2ADDR_MAXLEN];
     size_t addr_len;
@@ -127,8 +135,13 @@ static void send( int16_t data) {
     /* parse address */
     addr_len = gnrc_netif_addr_from_str("bcast", addr);
 
+    wsn_data_t paket_content;
+    paket_content.temperature = temp_data;
+    paket_content.adc         = adc_data;
+    paket_content.seq_number  = seq;
+
     /* put packet together */
-    pkt = gnrc_pktbuf_add(NULL, &data, sizeof(data), GNRC_NETTYPE_UNDEF);
+    pkt = gnrc_pktbuf_add(NULL, &paket_content, sizeof(paket_content), GNRC_NETTYPE_UNDEF);
     if (pkt == NULL) {
         puts("error: packet buffer full");
         return;
@@ -155,7 +168,9 @@ static void send( int16_t data) {
 
 int main(void)
 {
-
+    gpio_set(LED1_PIN);
+    gpio_set(LED2_PIN);
+    
 	msg_t m;
 
     kernel_pid_t pid = thread_create(temp_thread_stack, sizeof(temp_thread_stack),
@@ -166,11 +181,11 @@ int main(void)
 
     int sample = 0;
     adc_init(ADC_LINE(3));
-
+    uint32_t counter = 0;
 	while(1) {
 
-		LED1_ON;
-		LED2_OFF;
+		//LED1_ON;
+		//LED2_OFF;
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
@@ -179,12 +194,13 @@ int main(void)
         sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
         printf("ADC Value: %i\n", sample);
 
-        send((int16_t)m.content.value);
+        send((int16_t)m.content.value, (uint16_t) sample, counter);
 		
 		undervolting_sleep();
+        counter++;
 
-		LED1_OFF;
-		LED2_ON;
+		//LED1_OFF;
+		//LED2_ON;
 
 		msg_send_receive(&m, &m, pid);
         printf("1st: Got msg with content %u\n", (unsigned int)m.content.value);
@@ -193,9 +209,10 @@ int main(void)
         sample = adc_sample(ADC_LINE(3), ADC_RES_10BIT);
         printf("ADC Value: %i\n", sample);
 
-        send((int16_t)m.content.value);
+        send((int16_t)m.content.value, (uint16_t) sample, counter);
 
 		undervolting_sleep();
+        counter++;
 	
 	}
 }
