@@ -1,4 +1,5 @@
 USEMODULE += boards_common_nrf52xxdk
+USEMODULE += nrf802154_netdev_legacy
 
 ifneq (,$(filter mtd,$(USEMODULE)))
   USEMODULE += mtd_spi_nor
