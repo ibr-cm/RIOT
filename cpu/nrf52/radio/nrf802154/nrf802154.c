@@ -388,6 +388,7 @@ static int _recv(netdev_t *dev, void *buf, size_t len, void *info)
              * figure 122 of the v1.1 product specification. This appears to
              * match real world performance better */
             radio_info->rssi = (int16_t)hwlqi + ED_RSSIOFFS;
+            radio_info->crc_valid = NRF_RADIO->CRCSTATUS;
         }
     }
 
@@ -489,11 +490,8 @@ void isr_radio(void)
         uint8_t state = (uint8_t)NRF_RADIO->STATE;
         switch(state) {
             case RADIO_STATE_STATE_RxIdle:
-                /* only process packet if event callback is set and CRC is valid */
-                if ((nrf802154_dev->netdev.event_callback) &&
-                    (NRF_RADIO->CRCSTATUS == 1) &&
-                    (netdev_ieee802154_dst_filter(nrf802154_dev,
-                                                  &rxbuf[1]) == 0)) {
+                /* only process packet if event callback is set*/
+                if ((nrf802154_dev->netdev.event_callback)) {
                     _state |= RX_COMPLETE;
                 }
                 else {
