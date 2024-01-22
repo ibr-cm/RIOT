@@ -106,6 +106,18 @@ PSEUDOMODULES += gnrc_dhcpv6_client_6lbr
 PSEUDOMODULES += gnrc_dhcpv6_client_simple_pd
 ## @}
 ## @}
+
+## @defgroup 	net_gnrc_dmts_mac      gnrc_dmts_mac
+## @{
+PSEUDOMODULES += gnrc_dmts_mac_skew_detection
+PSEUDOMODULES += gnrc_dmts_mac_skew_detection_master
+PSEUDOMODULES += gnrc_dmts_mac_sync_interval_1s
+PSEUDOMODULES += gnrc_dmts_mac_sync_interval_8s
+PSEUDOMODULES += gnrc_dmts_mac_sync_interval_16s
+PSEUDOMODULES += gnrc_dmts_mac_sync_interval_32s
+PSEUDOMODULES += gnrc_dmts_mac_sync_interval_64s
+## @}
+
 PSEUDOMODULES += gnrc_ipv6_auto_subnets_auto_init
 PSEUDOMODULES += gnrc_ipv6_auto_subnets_simple
 PSEUDOMODULES += gnrc_ipv6_classic

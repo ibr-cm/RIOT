@@ -51,8 +51,7 @@
  * STM32 MCUs which support a "Smooth Calibration". Additionally, the measured delays in dmts_mac.c
  * are only valid when using a 100MHz STM32 MCU. If you plan to use a different
  * MCU, with a different clock speed, you will need to measure these delays yourself.
- * The accuracy of the synchronization cannot be better than 30,5 us, when a LSE with 32767 HZ is
- * used. Packets sent by the DMTS must always be 127 bytes in size. Therefore, the playoad must be
+ * Packets sent by the DMTS must always be 127 bytes in size. Therefore, the playoad must be
  * 106 bytes.
  *
  * ### Warning
