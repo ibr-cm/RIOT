@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 ML!PA Consulting GmbH
+ *               2024 TU Braunschweig
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -15,6 +16,7 @@
  *
  * @author      Benjamin Valentin <benjamin.valentin@ml-pa.com>
  * @author      Georg von Zengen <vonzengen@ibr.cs.tu-bs.de>
+ * @author      Lennart Lutz <lutz@ibr.cs.tu-bs.de>
  * @}
  */
 
@@ -38,6 +40,10 @@
 #include "at86rf215_internal.h"
 
 #include "debug.h"
+
+#ifdef MODULE_GNRC_DMTS_MAC
+#include "xtimer.h"
+#endif
 
 static int _send(netdev_t *netdev, const iolist_t *iolist);
 static int _recv(netdev_t *netdev, void *buf, size_t len, void *info);
@@ -85,6 +91,29 @@ static uint8_t _get_best_match(const uint8_t *array, uint8_t len, uint8_t val)
     return res;
 }
 
+#ifdef MODULE_GNRC_DMTS_MAC
+
+uint64_t isr_timestamp = 0;
+uint64_t valid_isr_timestamp = 0;
+
+/* executed in the GPIO ISR context */
+static void _irq_handler(void *arg)
+{
+    netdev_t *netdev = arg;
+
+    isr_timestamp = xtimer_now_usec64();
+
+    netdev->event_callback(netdev, NETDEV_EVENT_ISR);
+}
+
+uint64_t get_isr_timestamp(void)
+{
+    return valid_isr_timestamp;
+}
+
+
+#else
+
 /* executed in the GPIO ISR context */
 static void _irq_handler(void *arg)
 {
@@ -92,6 +121,9 @@ static void _irq_handler(void *arg)
 
     netdev->event_callback(netdev, NETDEV_EVENT_ISR);
 }
+
+#endif
+
 
 /* if only one interface is active, but the other one to sleep */
 static inline void _put_sibling_to_sleep(at86rf215_t *dev) {
@@ -1008,13 +1040,27 @@ static void _isr(netdev_t *netdev)
     netdev_ieee802154_t *netdev_ieee802154 = container_of(netdev, netdev_ieee802154_t, netdev);
     at86rf215_t *dev = container_of(netdev_ieee802154, at86rf215_t, netdev);
     uint8_t bb_irq_mask, rf_irq_mask;
-    uint8_t bb_irqs_enabled = BB_IRQ_RXFE | BB_IRQ_TXFE;
-
-    /* not using IRQMM because we want to know about AGCH */
-    bb_irqs_enabled |= BB_IRQ_RXAM;
+    uint8_t bb_irqs_enabled = BB_IRQ_RXFE | BB_IRQ_TXFE | BB_IRQ_RXAM;
 
     rf_irq_mask = at86rf215_reg_read(dev, dev->RF->RG_IRQS);
     bb_irq_mask = at86rf215_reg_read(dev, dev->BBC->RG_IRQS);
+
+#ifdef MODULE_GNRC_DMTS_MAC
+    if (bb_irq_mask & BB_IRQ_RXFS && netdev->event_callback)
+    {
+        valid_isr_timestamp = isr_timestamp;
+        /* will be executed in the same thread */
+        netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
+        bb_irq_mask &= ~BB_IRQ_RXFS;
+        /* 
+         * We can remove BB_IRQ_RXAM since the offset calculation is only triggered after
+         * BB_IRQ_RXFE (rx_complete). So only valid timestamps are used.
+         * Note: If you trigger the offset calculation manually, ensure that you do this only after
+         * you have received a valid message. (In your receive thread for example)
+         */
+        bb_irq_mask &= ~BB_IRQ_RXAM;
+    }
+#endif
 
     uint8_t timeout = dev->timeout;
     if (timeout) {
@@ -1137,127 +1183,127 @@ static void _isr(netdev_t *netdev)
     int iter = 0;
     while (timeout || (bb_irq_mask & (BB_IRQ_RXFE | BB_IRQ_TXFE))) {
 
-    /* This should never happen */
-    if (++iter > 3) {
-        puts("AT86RF215: stuck in ISR");
-        printf("\tnum_channels: %d\n", dev->num_chans);
-        printf("\tHW: %s\n", at86rf215_hw_state2a(at86rf215_get_rf_state(dev)));
-        printf("\tSW: %s\n", at86rf215_sw_state2a(dev->state));
-        printf("\trf_irq_mask: %x\n", rf_irq_mask);
-        printf("\tbb_irq_mask: %x\n", bb_irq_mask);
-        printf("\ttimeout: %x\n", timeout);
-        break;
-    }
-
-    switch (dev->state) {
-    case AT86RF215_STATE_IDLE:
-
-        if (!(bb_irq_mask & (BB_IRQ_RXFE | BB_IRQ_RXAM))) {
-            DEBUG("IDLE: only RXFE/RXAM expected (%x)\n", bb_irq_mask);
+        /* This should never happen */
+        if (++iter > 3) {
+            puts("AT86RF215: stuck in ISR");
+            printf("\tnum_channels: %d\n", dev->num_chans);
+            printf("\tHW: %s\n", at86rf215_hw_state2a(at86rf215_get_rf_state(dev)));
+            printf("\tSW: %s\n", at86rf215_sw_state2a(dev->state));
+            printf("\trf_irq_mask: %x\n", rf_irq_mask);
+            printf("\tbb_irq_mask: %x\n", bb_irq_mask);
+            printf("\ttimeout: %x\n", timeout);
             break;
         }
 
-        if ((bb_irq_mask & BB_IRQ_RXAM) && netdev->event_callback) {
-            /* will be executed in the same thread */
-            netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
+        switch (dev->state) {
+            case AT86RF215_STATE_IDLE:
+
+                if (!(bb_irq_mask & (BB_IRQ_RXFE | BB_IRQ_RXAM))) {
+                    DEBUG("IDLE: only RXFE/RXAM expected (%x)\n", bb_irq_mask);
+                    break;
+                }
+
+                if ((bb_irq_mask & BB_IRQ_RXAM) && netdev->event_callback) {
+                    /* will be executed in the same thread */
+                    netdev->event_callback(netdev, NETDEV_EVENT_RX_STARTED);
+                }
+
+                bb_irq_mask &= ~BB_IRQ_RXAM;
+
+                if (!(bb_irq_mask & BB_IRQ_RXFE)) {
+                    break;
+                }
+
+                bb_irq_mask &= ~BB_IRQ_RXFE;
+
+                if (netdev->event_callback) {
+                    /* will be executed in the same thread */
+                    netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+                }
+
+                if (rx_ack_req) {
+                    dev->state = AT86RF215_STATE_RX_SEND_ACK;
+                    break;
+                }
+
+                _set_idle(dev);
+
+                break;
+
+            case AT86RF215_STATE_RX_SEND_ACK:
+
+                if (!(bb_irq_mask & BB_IRQ_TXFE)) {
+                    DEBUG("RX_SEND_ACK: only TXFE expected (%x)\n", bb_irq_mask);
+                    break;
+                }
+
+                bb_irq_mask &= ~BB_IRQ_TXFE;
+
+                _set_idle(dev);
+                break;
+
+            case AT86RF215_STATE_TX:
+
+                if (!(bb_irq_mask & BB_IRQ_TXFE)) {
+                    DEBUG("TX: only TXFE expected (%x)\n", bb_irq_mask);
+                    break;
+                }
+
+                bb_irq_mask &= ~BB_IRQ_TXFE;
+
+                if (dev->flags & AT86RF215_OPT_ACK_REQUESTED) {
+                    dev->state = AT86RF215_STATE_TX_WAIT_ACK;
+                    _start_ack_timer(dev);
+                } else {
+                    _tx_end(dev, NETDEV_EVENT_TX_COMPLETE);
+                }
+                break;
+
+            case AT86RF215_STATE_TX_WAIT_ACK:
+
+                if (!((bb_irq_mask & BB_IRQ_RXFE) || timeout)) {
+                    DEBUG("TX_WAIT_ACK: only RXFE or timeout expected (%x)\n", bb_irq_mask);
+                    break;
+                }
+
+                /* handle timeout case */
+                if (!(bb_irq_mask & BB_IRQ_RXFE)) {
+                    goto timeout;
+                }
+
+                bb_irq_mask &= ~BB_IRQ_RXFE;
+
+                if (_ack_frame_received(dev)) {
+                    timeout = 0;
+                    xtimer_remove(&dev->timer);
+                    _tx_end(dev, NETDEV_EVENT_TX_COMPLETE);
+                    at86rf215_rf_cmd(dev, CMD_RF_RX);
+                    break;
+                }
+
+                /* we got a spurious ACK */
+                if (!timeout) {
+                    at86rf215_rf_cmd(dev, CMD_RF_RX);
+                    break;
+                }
+
+                timeout:
+                /* For a yet unknown reason, the device spends an excessive amount of time
+                * transmitting the preamble in non-legacy modes.
+                * This means the calculated ACK timeouts are often too short.
+                * To mitigate this, postpone the ACK timeout if the device is still RXign
+                * the ACK frame when the timeout expires.
+                */
+                if (dev->flags & AT86RF215_OPT_AGCH) {
+                    DEBUG("[at86rf215] Ack timeout postponed\n");
+                    _start_ack_timer(dev);
+                } else {
+                    DEBUG("[at86rf215] Ack timeout\n");
+                    _handle_ack_timeout(dev);
+                }
+
+                timeout = 0;
+                break;
         }
-
-        bb_irq_mask &= ~BB_IRQ_RXAM;
-
-        if (!(bb_irq_mask & BB_IRQ_RXFE)) {
-            break;
-        }
-
-        bb_irq_mask &= ~BB_IRQ_RXFE;
-
-        if (netdev->event_callback) {
-            /* will be executed in the same thread */
-            netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
-        }
-
-        if (rx_ack_req) {
-            dev->state = AT86RF215_STATE_RX_SEND_ACK;
-            break;
-        }
-
-        _set_idle(dev);
-
-        break;
-
-    case AT86RF215_STATE_RX_SEND_ACK:
-
-        if (!(bb_irq_mask & BB_IRQ_TXFE)) {
-            DEBUG("RX_SEND_ACK: only TXFE expected (%x)\n", bb_irq_mask);
-            break;
-        }
-
-        bb_irq_mask &= ~BB_IRQ_TXFE;
-
-        _set_idle(dev);
-        break;
-
-    case AT86RF215_STATE_TX:
-
-        if (!(bb_irq_mask & BB_IRQ_TXFE)) {
-            DEBUG("TX: only TXFE expected (%x)\n", bb_irq_mask);
-            break;
-        }
-
-        bb_irq_mask &= ~BB_IRQ_TXFE;
-
-        if (dev->flags & AT86RF215_OPT_ACK_REQUESTED) {
-            dev->state = AT86RF215_STATE_TX_WAIT_ACK;
-            _start_ack_timer(dev);
-        } else {
-            _tx_end(dev, NETDEV_EVENT_TX_COMPLETE);
-        }
-        break;
-
-    case AT86RF215_STATE_TX_WAIT_ACK:
-
-        if (!((bb_irq_mask & BB_IRQ_RXFE) || timeout)) {
-            DEBUG("TX_WAIT_ACK: only RXFE or timeout expected (%x)\n", bb_irq_mask);
-            break;
-        }
-
-        /* handle timeout case */
-        if (!(bb_irq_mask & BB_IRQ_RXFE)) {
-            goto timeout;
-        }
-
-        bb_irq_mask &= ~BB_IRQ_RXFE;
-
-        if (_ack_frame_received(dev)) {
-            timeout = 0;
-            xtimer_remove(&dev->timer);
-            _tx_end(dev, NETDEV_EVENT_TX_COMPLETE);
-            at86rf215_rf_cmd(dev, CMD_RF_RX);
-            break;
-        }
-
-        /* we got a spurious ACK */
-        if (!timeout) {
-            at86rf215_rf_cmd(dev, CMD_RF_RX);
-            break;
-        }
-
-timeout:
-       /* For a yet unknown reason, the device spends an excessive amount of time
-        * transmitting the preamble in non-legacy modes.
-        * This means the calculated ACK timeouts are often too short.
-        * To mitigate this, postpone the ACK timeout if the device is still RXign
-        * the ACK frame when the timeout expires.
-        */
-        if (dev->flags & AT86RF215_OPT_AGCH) {
-            DEBUG("[at86rf215] Ack timeout postponed\n");
-            _start_ack_timer(dev);
-        } else {
-            DEBUG("[at86rf215] Ack timeout\n");
-            _handle_ack_timeout(dev);
-        }
-
-        timeout = 0;
-        break;
-    }
     }
 }

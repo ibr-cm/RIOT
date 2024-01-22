@@ -30,6 +30,15 @@ extern "C" {
  */
 extern const netdev_driver_t at86rf215_driver;
 
+#ifdef MODULE_GNRC_DMTS_MAC
+
+/**
+ * @brief   Getter function to get the isr timestamp for dmts.
+*/
+uint64_t get_isr_timestamp(void);
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif
