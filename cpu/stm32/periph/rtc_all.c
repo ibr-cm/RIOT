@@ -3,6 +3,7 @@
  *               2016 Laksh Bhatia
  *               2016-2017 OTA keys S.A.
  *               2017 Freie Universität Berlin
+ *               2024 TU Braunschweig
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -19,13 +20,17 @@
  * @author      Laksh Bhatia <bhatialaksh3@gmail.com>
  * @author      Vincent Dupont <vincent@otakeys.com>
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Lennart Lutz <lutz@ibr.cs.tu-bs.de>
  * @}
  */
 
+#include <string.h>
 #include <time.h>
 #include "cpu.h"
 #include "stmclk.h"
 #include "periph/rtc.h"
+#include "ztimer.h"
+#include "fmt.h"
 
 /* map some CPU specific register names */
 #if defined (CPU_FAM_STM32L0) || defined(CPU_FAM_STM32L1)
@@ -182,8 +187,30 @@
 
 /* figure out sync and async prescaler */
 #if IS_ACTIVE(CONFIG_BOARD_HAS_LSE)
+#ifdef MODULE_GNRC_DMTS_MAC
+/*
+ * DMTS_MAC needs microseconds to synchronize with a high precision.
+ * If skew detection is enabled, one of the nodes has to be the master node.
+ * Every other node will calibrate its clock according to the master clock.
+ * In order to calibrate correctly, we have to accelerate the clock.
+ * (Reference manual of STM32 MCUs, section "Smooth Calibration")
+*/
+#ifdef MODULE_GNRC_DMTS_MAC_SKEW_DETECTION
+#ifdef MODULE_GNRC_DMTS_MAC_SKEW_DETECTION_MASTER
+#define PRE_SYNC            (32767)
+#define PRE_ASYNC           (0)
+#else
+#define PRE_SYNC            (32759)
+#define PRE_ASYNC           (0)
+#endif
+#else
+#define PRE_SYNC            (32767)
+#define PRE_ASYNC           (0)
+#endif
+#else
 #define PRE_SYNC            (255)
 #define PRE_ASYNC           (127)
+#endif
 #elif (CLOCK_LSI == 40000)
 #define PRE_SYNC            (319)
 #define PRE_ASYNC           (124)
@@ -213,6 +240,7 @@ static struct {
     void *arg;                  /**< argument passed to the callback */
 } isr_ctx;
 
+
 static uint32_t val2bcd(int val, int shift, uint32_t mask)
 {
     uint32_t bcdhigh = 0;
@@ -231,6 +259,7 @@ static int bcd2val(uint32_t val, int shift, uint32_t mask)
     return (((tmp >> 4) * 10) + (tmp & 0x0f));
 }
 
+
 void rtc_unlock(void)
 {
     /* enable backup clock domain */
@@ -238,21 +267,31 @@ void rtc_unlock(void)
     /* unlock RTC */
     RTC->WPR = WPK1;
     RTC->WPR = WPK2;
-    /* enter RTC init mode */
-    RTC_REG_ISR |= RTC_ISR_INIT;
-    while (!(RTC_REG_ISR & RTC_ISR_INITF)) {}
 }
 
 void rtc_lock(void)
 {
-    /* exit RTC init mode */
-    RTC_REG_ISR &= ~RTC_ISR_INIT;
-    while (RTC_REG_ISR & RTC_ISR_INITF) {}
     /* lock RTC device */
     RTC->WPR = 0xff;
     /* disable backup clock domain */
     stmclk_dbp_lock();
 }
+
+
+static inline void rtc_enter_init_mode(void)
+{
+    /* enter RTC init mode */
+    RTC->ISR |= RTC_ISR_INIT;
+    while (!(RTC->ISR & RTC_ISR_INITF)) {}
+}
+
+static inline void rtc_exit_init_mode(void)
+{
+    /* exit RTC init mode */
+    RTC->ISR &= ~RTC_ISR_INIT;
+    while (RTC->ISR & RTC_ISR_INITF) {}
+}
+
 
 void rtc_init(void)
 {
@@ -269,8 +308,10 @@ void rtc_init(void)
 #endif
     stmclk_dbp_lock();
 
-    /* enable low frequency clock */
-    stmclk_enable_lfclk();
+    if (!(RTC->ISR & RTC_ISR_INITS))
+    {
+        /* enable low frequency clock */
+        stmclk_enable_lfclk();
 
     /* select input clock and enable the RTC */
     stmclk_dbp_unlock();
@@ -285,16 +326,23 @@ void rtc_init(void)
 #if IS_ACTIVE(CONFIG_BOARD_HAS_LSE)
     EN_REG |= (CLKSEL_LSE | EN_BIT);
 #else
-    EN_REG |= (CLKSEL_LSI | EN_BIT);
+        EN_REG |= (CLKSEL_LSI | EN_BIT);
 #endif
 
-    rtc_unlock();
-    /* reset configuration */
-    RTC->CR = 0;
-    RTC_REG_ISR = RTC_ISR_INIT;
-    /* configure prescaler (RTC PRER) */
-    RTC->PRER = (PRE_SYNC | (PRE_ASYNC << 16));
-    rtc_lock();
+        rtc_unlock();
+        /* reset configuration */
+        RTC->CR = 0;
+        RTC_REG_ISR = RTC_ISR_INIT;
+        rtc_enter_init_mode();
+        /* configure prescaler (RTC PRER) */
+        // we need 2 write accesses acording to the reference manual...
+        RTC->PRER = PRE_SYNC;
+        RTC->PRER |= (PRE_ASYNC << 16);
+        //printf("Configure prescaler: SYNC = %d, ASYNC = %d\n", PRE_SYNC, PRE_ASYNC);
+        //printf("Resulting prescaler: SYNC = %ld, ASYNC = %ld\n", RTC->PRER & 0x7FFF, (RTC->PRER >> 16) & 0x7F);
+        rtc_exit_init_mode();
+        rtc_lock();
+    }
 
     /* configure the EXTI channel, as RTC interrupts are routed through it.
      * Needs to be configured to trigger on rising edges. */
@@ -308,12 +356,14 @@ void rtc_init(void)
     NVIC_EnableIRQ(IRQN);
 }
 
+
 int rtc_set_time(struct tm *time)
 {
     /* normalize input */
     rtc_tm_normalize(time);
 
     rtc_unlock();
+    rtc_enter_init_mode();
 
     RTC->DR = (val2bcd((time->tm_year - YEAR_OFFSET), RTC_DR_YU_Pos, DR_Y_MASK) |
                val2bcd(time->tm_mon + 1,  RTC_DR_MU_Pos, DR_M_MASK) |
@@ -321,17 +371,28 @@ int rtc_set_time(struct tm *time)
     RTC->TR = (val2bcd(time->tm_hour, RTC_TR_HU_Pos, TR_H_MASK) |
                val2bcd(time->tm_min,  RTC_TR_MNU_Pos, TR_M_MASK) |
                val2bcd(time->tm_sec,  RTC_TR_SU_Pos, TR_S_MASK));
+
+    rtc_exit_init_mode();
     rtc_lock();
+
     while (!(RTC_REG_ISR & RTC_ISR_RSF)) {}
 
     return 0;
 }
 
+
 int rtc_get_time(struct tm *time)
 {
+    return rtc_get_time_micros(time, NULL, NULL);
+}
+
+int rtc_get_time_micros(struct tm *time, int16_t *millis, int16_t *micros)
+{
     /* save current time */
+    uint32_t ssr = RTC->SSR;
     uint32_t tr = RTC->TR;
     uint32_t dr = RTC->DR;
+    
     time->tm_year = bcd2val(dr, RTC_DR_YU_Pos, DR_Y_MASK) + YEAR_OFFSET;
     time->tm_mon  = bcd2val(dr, RTC_DR_MU_Pos, DR_M_MASK) - 1;
     time->tm_mday = bcd2val(dr, RTC_DR_DU_Pos, DR_D_MASK);
@@ -339,17 +400,171 @@ int rtc_get_time(struct tm *time)
     time->tm_min  = bcd2val(tr, RTC_TR_MNU_Pos, TR_M_MASK);
     time->tm_sec  = bcd2val(tr, RTC_TR_SU_Pos, TR_S_MASK);
 
+    if (micros != NULL)
+    {
+        // Since we defined the prescaler static, we can use it directly
+        *millis = (int16_t)(((PRE_SYNC - ssr) * 1000 ) / (PRE_SYNC + 1)); // No need to round since we only want the micros
+
+        uint64_t numerator = PRE_SYNC - ssr; // * 1000 * 1000 doesnt work!
+        numerator *= 1000;
+        numerator *= 1000;
+        numerator *= 1000; // Rounding
+
+        uint64_t micromillis = (numerator / (PRE_SYNC + 1)); // Holds micro and milli seconds
+        micromillis += 500; // Rounding
+        micromillis /= 1000; // Rounding
+
+        *micros = (int16_t) (micromillis - (*millis * 1000));
+    }
+    else if (millis != NULL)
+    {
+        // Since we defined the prescaler static, we can use it directly
+        //*millis = (int16_t)(((PRE_SYNC - ssr) * 1000 ) / (PRE_SYNC + 1)); // TODO: round down?
+
+        uint64_t ms = PRE_SYNC - ssr; 
+        ms *= 1000;
+        ms *= 1000; // Rounding
+        ms /= (PRE_SYNC + 1);
+        ms += 500; // Rounding
+        ms /= 1000; // Rounding
+
+        *millis = (int16_t) ms;
+
+        if (*millis == 1000) // Since the rounding could cause an overflow, we have to update the time struct and milli seconds accordingly
+        {
+            *millis = 0;
+            time->tm_sec += 1;
+
+            rtc_tm_normalize(time);
+        }
+    }
+
     return 0;
 }
 
-int rtc_set_alarm(struct tm *time, rtc_alarm_cb_t cb, void *arg)
+int rtc_get_timestamp(uint64_t *timestamp)
+{   
+    /* First thing to do: save current time */
+    uint32_t tr = RTC->TR;
+    uint32_t dr = RTC->DR;
+
+    struct tm time;
+    *timestamp = 0;
+    
+    time.tm_year = bcd2val(dr, RTC_DR_YU_Pos, DR_Y_MASK) + YEAR_OFFSET;
+    time.tm_mon  = bcd2val(dr, RTC_DR_MU_Pos, DR_M_MASK) - 1;
+    time.tm_mday = bcd2val(dr, RTC_DR_DU_Pos, DR_D_MASK);
+    time.tm_hour = bcd2val(tr, RTC_TR_HU_Pos, TR_H_MASK);
+    time.tm_min  = bcd2val(tr, RTC_TR_MNU_Pos, TR_M_MASK);
+    time.tm_sec  = bcd2val(tr, RTC_TR_SU_Pos, TR_S_MASK);
+
+    *timestamp = (uint64_t) mktime(&time);
+
+    return 0;
+}
+
+int rtc_get_timestamp_millis(uint64_t *timestamp)
 {
+    uint32_t ssr = RTC->SSR;
+    rtc_get_timestamp(timestamp);
+
+    // Since we defined the prescaler static, we can use it directly
+    uint64_t millis = PRE_SYNC - ssr; 
+    millis *= 1000;
+    millis *= 1000; // Rounding
+    millis /= (PRE_SYNC + 1);
+    millis += 500; // Rounding
+    millis /= 1000; // Rounding
+
+    *timestamp *= 1000; // Millis resolution
+    *timestamp += (uint64_t) millis;
+    
+    return 0;
+}
+
+int rtc_get_timestamp_micros(uint64_t *timestamp)
+{   
+    uint32_t ssr = RTC->SSR;
+    rtc_get_timestamp(timestamp);
+
+    // Since we defined the prescaler static, we can use it directly
+    uint64_t numerator = PRE_SYNC - ssr; // * 1000 * 1000... doesnt work!
+    numerator *= 1000;
+    numerator *= 1000;
+    numerator *= 1000; // Rounding
+
+    uint64_t micros = numerator / (PRE_SYNC + 1);
+    micros += 500; // Rounding
+    micros /= 1000; // Rounding
+
+    *timestamp *= 1000 * 1000; // Micros resoution
+    *timestamp += (uint64_t) micros;
+    
+    return 0;
+}
+
+
+int rtc_timestamp_to_time(uint64_t *timestamp, struct tm *time, int16_t *millis, int16_t *micros)
+{
+    struct tm *temp_time;
+
+    if (micros != NULL)
+    {
+        const time_t timestamp_sec = (uint32_t) (*timestamp / 1000000); // Get s resolution timestamp
+
+        temp_time = gmtime(&timestamp_sec); // Convert timestamp to struct tm
+
+        int32_t ms_us = *timestamp - (timestamp_sec * 1000000); // Holds millis and micros
+        *millis = ms_us / 1000;
+        *micros = ms_us - (*millis * 1000);
+    }
+    else if (millis != NULL) 
+    {
+        const time_t timestamp_sec = (uint32_t) (*timestamp / 1000); // Get s resolution timestamp
+
+        temp_time = gmtime(&timestamp_sec); // Convert timestamp to struct tm
+
+        *millis = *timestamp - (timestamp_sec * 1000);
+    }
+    else
+    {
+        const time_t timestamp_msec = (uint32_t) *timestamp;
+        temp_time = gmtime(&timestamp_msec); // Convert timestamp to struct tm
+    }
+
+    // Since gmtime returns a pointer to a tm struct we have to copy it. (To use it outside of this function)
+    memcpy(time, temp_time, sizeof(struct tm));
+
+    return 0;
+}
+
+int rtc_time_to_timestamp(struct tm *time, int16_t *millis, int16_t *micros, uint64_t *timestamp)
+{
+    *timestamp = (uint64_t) mktime(time);
+
+    if (millis != NULL)
+    {
+        *timestamp *= 1000;
+        *timestamp += *millis;
+    }
+
+    if (micros != NULL)
+    {
+        *timestamp *= 1000;
+        *timestamp += *micros;
+    }
+
+    return 0;
+}
+
+
+int rtc_set_alarm(struct tm *time, rtc_alarm_cb_t cb, void *arg) {
+
     /* normalize input */
     rtc_tm_normalize(time);
-
     /* disable existing alarm (if enabled) */
     rtc_clear_alarm();
-
+    /* unlock the rtc to grant write access */
     rtc_unlock();
 
     /* save callback and argument */
@@ -374,6 +589,51 @@ int rtc_set_alarm(struct tm *time, rtc_alarm_cb_t cb, void *arg)
 
     return 0;
 }
+
+int rtc_set_alarm_micros(struct tm *time, rtc_alarm_cb_t cb, void *arg, int16_t millis, int16_t micros)
+{
+    /* normalize input */
+    rtc_tm_normalize(time);
+    /* disable existing alarm (if enabled) */
+    rtc_clear_alarm();
+    /* unlock the rtc to grant write access */
+    rtc_unlock();
+
+    /* save callback and argument */
+    isr_ctx.cb = cb;
+    isr_ctx.arg = arg;
+
+    /* set wakeup time */
+    RTC->ALRMAR = (val2bcd(time->tm_mday, RTC_ALRMAR_DU_Pos, ALRM_D_MASK) |
+                   val2bcd(time->tm_hour, RTC_ALRMAR_HU_Pos, ALRM_H_MASK) |
+                   val2bcd(time->tm_min, RTC_ALRMAR_MNU_Pos, ALRM_M_MASK) |
+                   val2bcd(time->tm_sec,  RTC_ALRMAR_SU_Pos, ALRM_S_MASK));
+
+    uint32_t alarm_ssr = ((15 << RTC_ALRMASSR_MASKSS_Pos) & RTC_ALRMASSR_MASKSS_Msk) ; // Check all bits
+    
+    uint32_t milmicros = (millis * 1000) + micros;
+
+    int64_t alarm_ss = milmicros;
+    alarm_ss *= (PRE_SYNC + 1);
+    alarm_ss /= 1000000;
+    alarm_ss -= (PRE_SYNC);
+
+    alarm_ssr |= (uint32_t)(-alarm_ss);
+    RTC->ALRMASSR = alarm_ssr;
+
+    /* Enable Alarm A */
+#if !defined(CPU_FAM_STM32L5)
+    RTC_REG_ISR &= ~(RTC_ISR_ALRAF);
+#else
+    RTC_REG_SCR = RTC_SCR_CALRAF;
+#endif
+    RTC->CR |= (RTC_CR_ALRAE | RTC_CR_ALRAIE);
+
+    rtc_lock();
+
+    return 0;
+}
+
 
 int rtc_get_alarm(struct tm *time)
 {
@@ -408,6 +668,7 @@ void rtc_clear_alarm(void)
     rtc_lock();
 }
 
+
 void rtc_poweron(void)
 {
     stmclk_dbp_unlock();
@@ -420,6 +681,79 @@ void rtc_poweroff(void)
     stmclk_dbp_unlock();
     EN_REG &= ~EN_BIT;
     stmclk_dbp_lock();
+}
+
+
+void rtc_smooth_cal(uint32_t calib_period, uint32_t plus_pulses, uint32_t minus_pulses_value)
+{
+    rtc_unlock();
+
+    if (minus_pulses_value > 511)
+    {
+        minus_pulses_value = 511; // Set to maximum value
+    }
+
+    uint8_t calb_timeout = 2;
+
+    /* Check for pending calibration */
+    if (RTC->ISR & 0x00010000)
+    {
+        /* Wait until calibration is complete */
+        while ((RTC->ISR & 0x00010000) && calb_timeout != 0)
+        {
+            calb_timeout--;
+            ztimer_sleep(ZTIMER_MSEC, 20);
+        }
+    }
+
+    if (!(RTC->ISR & 0x00010000))
+    {
+        RTC->CALR = (uint32_t) (calib_period | plus_pulses | minus_pulses_value);
+    }
+    else
+    {
+        printf("rtc_all: Error calibrating the rtc!\n");
+    }
+    
+    rtc_lock();
+}
+
+
+int rtc_print_time(struct tm *time, int16_t *millis, int16_t *micros, uint8_t date)
+{
+    if (date)
+    {
+        printf("%04i-%02i-%02i %02i:%02i:%02i",
+           time->tm_year + 1900, time->tm_mon + 1, time->tm_mday,
+           time->tm_hour, time->tm_min, time->tm_sec);
+    }
+    else
+    {
+        printf("%02i:%02i:%02i", time->tm_hour, time->tm_min, time->tm_sec);
+    }
+
+    if (millis != NULL)
+    {
+        printf(".%03d", *millis);
+    }
+
+    if (micros != NULL)
+    {
+        printf(".%03d", *micros);
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
+int rtc_print_timestamp(uint64_t *timestamp)
+{
+    char uint64_str[64];
+    fmt_u64_dec(uint64_str, *timestamp);
+    printf("%s\n", uint64_str);
+
+    return 0;
 }
 
 void ISR_NAME(void)

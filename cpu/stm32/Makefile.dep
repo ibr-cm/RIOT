@@ -78,6 +78,12 @@ ifneq (,$(filter periph_rtc_mem,$(USEMODULE)))
   FEATURES_REQUIRED += periph_rtc
 endif
 
+ifneq (,$(filter periph_rtc,$(USEMODULE)))
+  USEMODULE += ztimer
+  USEMODULE += ztimer_msec
+  USEMODULE += fmt # For printing timestamps
+endif
+
 ifneq (,$(filter periph_adc,$(FEATURES_USED)))
   ifneq (,$(filter f3 l4 wl, $(CPU_FAM)))
     USEMODULE += ztimer
