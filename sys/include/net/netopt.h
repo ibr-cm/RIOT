@@ -871,6 +871,32 @@ typedef enum {
      */
     NETOPT_GTS_TX,
 
+#ifdef MODULE_GNRC_DMTS_MAC
+    /**
+     * @brief   Get clock offset as calculated by dmts protocol
+     */
+    NETOPT_DMTS_CLOCK_OFFSET,
+    /**
+     * @brief   Trigger a clock offset calculation manually
+     * @note    Do this only after a valid message has been received!
+     */
+    NETOPT_DMTS_CALC_CLOCK_OFFSET,
+    /**
+     * @brief   Enable or disable automatic clock offset calculation
+     */
+    NETOPT_DMTS_AUTO_CLOCK_OFFSET,
+    /**
+     * @brief   Period duration that is used to calculate the number of pulses
+     *          to be masked or added by the RTC
+     * @note    Value should be in the following format: 30,5 us period duration (32768 Hz) -> 305
+     */
+    NETOPT_DMTS_PERIOD,
+    /**
+     * @brief   Resets all calibration configs for the rtc
+     */
+    NETOPT_DMTS_RESET_CAL_RTC,
+#endif
+
     /**
      * @brief   maximum number of options defined here.
      *
