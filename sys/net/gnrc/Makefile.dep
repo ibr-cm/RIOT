@@ -21,6 +21,7 @@ endif
 
 ifneq (,$(filter gnrc_dmts_mac,$(USEMODULE)))
   USEMODULE += periph_rtc
+  USEMODULE += ztimer64_xtimer_compat
   USEMODULE += random
 endif
 
