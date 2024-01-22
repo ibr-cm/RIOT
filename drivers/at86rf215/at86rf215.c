@@ -95,9 +95,6 @@ void at86rf215_reset_and_cfg(at86rf215_t *dev)
             IS_ACTIVE(CONFIG_IEEE802154_DEFAULT_ACK_REQ) ? NETOPT_ENABLE : NETOPT_DISABLE;
     netdev_ieee802154_set(&dev->netdev, NETOPT_ACK_REQ,
                           &ack_req, sizeof(ack_req));
-
-    /* enable RX start IRQs */
-    at86rf215_reg_or(dev, dev->BBC->RG_IRQM, BB_IRQ_RXAM);
 }
 
 void at86rf215_reset(at86rf215_t *dev)
@@ -133,8 +130,13 @@ if (!IS_ACTIVE(CONFIG_AT86RF215_USE_CLOCK_OUTPUT)){
     at86rf215_set_trim(dev, CONFIG_AT86RF215_TRIM_VAL);
 #endif
 
-    /* enable TXFE & RXFE IRQ */
-    at86rf215_reg_write(dev, dev->BBC->RG_IRQM, BB_IRQ_TXFE | BB_IRQ_RXFE);
+    /* enable TXFE & RXFE & RXAM IRQ */
+    uint8_t bb_irqs_enabled = BB_IRQ_TXFE | BB_IRQ_RXFE | BB_IRQ_RXAM;
+#ifdef MODULE_GNRC_DMTS_MAC
+    /* For DMTS MAC we need to know when we have received a valid PHR */
+    bb_irqs_enabled |= BB_IRQ_RXFS;
+#endif
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQM, bb_irqs_enabled);
 
     /* enable EDC IRQ */
     at86rf215_reg_write(dev, dev->RF->RG_IRQM, RF_IRQ_EDC | RF_IRQ_TRXRDY);
