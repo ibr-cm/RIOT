@@ -28,6 +28,9 @@
 #ifdef MODULE_GNRC_GOMACH
 #include "net/gnrc/gomach/gomach.h"
 #endif
+#ifdef MODULE_GNRC_DMTS_MAC
+#include "net/gnrc/dmts_mac/dmts_mac.h"
+#endif
 #include "net/gnrc.h"
 #include "include/init_devs.h"
 
@@ -65,6 +68,10 @@ static inline void _setup_netif(gnrc_netif_t *netif, void* netdev, void* stack,
                                  prio, name, netdev);
 #elif defined(MODULE_GNRC_LWMAC)
         gnrc_netif_lwmac_create(netif, stack,
+                                AT86RF215_MAC_STACKSIZE,
+                                prio, name, netdev);
+#elif defined(MODULE_GNRC_DMTS_MAC)
+        gnrc_netif_dmts_create(netif, stack,
                                 AT86RF215_MAC_STACKSIZE,
                                 prio, name, netdev);
 #else
