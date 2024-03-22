@@ -240,6 +240,7 @@ static struct {
     void *arg;                  /**< argument passed to the callback */
 } isr_ctx;
 
+
 static uint32_t val2bcd(int val, int shift, uint32_t mask)
 {
     uint32_t bcdhigh = 0;
@@ -258,6 +259,7 @@ static int bcd2val(uint32_t val, int shift, uint32_t mask)
     return (((tmp >> 4) * 10) + (tmp & 0x0f));
 }
 
+
 void rtc_unlock(void)
 {
     /* enable backup clock domain */
@@ -275,6 +277,7 @@ void rtc_lock(void)
     stmclk_dbp_lock();
 }
 
+
 static inline void rtc_enter_init_mode(void)
 {
     /* enter RTC init mode */
@@ -288,6 +291,7 @@ static inline void rtc_exit_init_mode(void)
     RTC->ISR &= ~RTC_ISR_INIT;
     while (RTC->ISR & RTC_ISR_INITF) {}
 }
+
 
 void rtc_init(void)
 {
@@ -558,10 +562,10 @@ int rtc_set_alarm(struct tm *time, rtc_alarm_cb_t cb, void *arg) {
 
     /* normalize input */
     rtc_tm_normalize(time);
-    /* unlock the rtc to grant write access */
-    rtc_unlock();
     /* disable existing alarm (if enabled) */
     rtc_clear_alarm();
+    /* unlock the rtc to grant write access */
+    rtc_unlock();
 
     /* save callback and argument */
     isr_ctx.cb = cb;
@@ -590,10 +594,10 @@ int rtc_set_alarm_micros(struct tm *time, rtc_alarm_cb_t cb, void *arg, int16_t 
 {
     /* normalize input */
     rtc_tm_normalize(time);
-    /* unlock the rtc to grant write access */
-    rtc_unlock();
     /* disable existing alarm (if enabled) */
     rtc_clear_alarm();
+    /* unlock the rtc to grant write access */
+    rtc_unlock();
 
     /* save callback and argument */
     isr_ctx.cb = cb;
@@ -751,7 +755,6 @@ int rtc_print_timestamp(uint64_t *timestamp)
 
     return 0;
 }
-
 
 void ISR_NAME(void)
 {
